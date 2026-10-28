@@ -2,11 +2,20 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <iomanip>
+#include <chrono>
 #include "pipeline.h"
 #include "utils.h"
 #include "ipm.h"
 
 using namespace blsf;
+
+static std::string csv(const std::string& s) {
+  std::string out="\"";
+  for(char ch:s) { if(ch=='"') out+='"'; out+=ch; }
+  return out+"\"";
+}
 
 static void save_debug_pack(const std::string& debug_dir, const std::string& name, const DebugPack& d) {
   ensure_dir(debug_dir + "/" + name);
@@ -46,6 +55,8 @@ int main(int argc, char** argv) {
   std::string debug_dir="outputs/debug";
   std::string config_path="configs/default.yaml";
   bool reuse_h=false;
+  std::string homography_path;
+  cv::setNumThreads(1);
 
   for (int i=1;i<argc;++i) {
     std::string a = argv[i];
@@ -54,10 +65,12 @@ int main(int argc, char** argv) {
     else if (a=="--debug_dir" && i+1<argc) debug_dir = argv[++i];
     else if (a=="--config" && i+1<argc) config_path = argv[++i];
     else if (a=="--reuse_h") reuse_h=true;
+    else if (a=="--homography" && i+1<argc) homography_path=argv[++i];
+    else { std::cerr << "Unknown or incomplete argument: " << a << "\n"; return 1; }
   }
 
   if (input_dir.empty()) {
-    std::cerr << "Usage: blsf_lane --input_dir <folder> [--output_dir ...] [--debug_dir ...] [--config ...] [--reuse_h]\n";
+    std::cerr << "Usage: blsf_lane --input_dir <folder> [--output_dir ...] [--debug_dir ...] [--config ...] [--homography <file> | --reuse_h]\n";
     return 1;
   }
 
@@ -78,7 +91,8 @@ int main(int argc, char** argv) {
   }
 
   std::string H_path = output_dir + "/homography.yml";
-  if (reuse_h) {
+  if (reuse_h || !homography_path.empty()) {
+    if (!homography_path.empty()) H_path=homography_path;
     if (!load_homography(H_path, cfg.ipm)) {
       std::cerr << "reuse_h requested but homography not found: " << H_path << "\n";
       return 1;
@@ -93,12 +107,27 @@ int main(int argc, char** argv) {
     save_homography(H_path, cfg.ipm);
   }
 
+  std::ofstream predictions(output_dir+"/predictions.csv");
+  if(!predictions) {std::cerr << "Cannot open predictions.csv\n";return 1;}
+  predictions << std::setprecision(17);
+  predictions << "image,status,ok,dom,B0,B1,B2,unique_vote,retained_vote,dom_ratio,TL,TU,left_valid,left_a,left_b,left_c,right_valid,right_a,right_b,right_c,pipeline_ms\n";
   for (auto& path : images) {
     cv::Mat bgr = cv::imread(path);
-    if (bgr.empty()) continue;
+    if (bgr.empty()) { predictions << csv(path) << ",unreadable_image,0,,,,,,,,,,0,,,,0,,,,\n"; continue; }
 
     DebugPack dbg;
+    auto t0=std::chrono::steady_clock::now();
     RunResult rr = run_pipeline(bgr, cfg, dbg);
+    double ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count();
+    predictions << csv(path) << "," << rr.status << "," << rr.ok << "," << rr.vote.dom
+      << "," << rr.vote.B0 << "," << rr.vote.B1 << "," << rr.vote.B2 << "," << rr.vote.unique_vote << "," << rr.vote.retained_vote
+      << "," << rr.vote.dom_ratio << "," << rr.vote.TL << "," << rr.vote.TU << "," << rr.left.valid << ",";
+    if(rr.left.valid) predictions << rr.left.a << "," << rr.left.b << "," << rr.left.c;
+    else predictions << ",,";
+    predictions << "," << rr.right.valid << ",";
+    if(rr.right.valid) predictions << rr.right.a << "," << rr.right.b << "," << rr.right.c;
+    else predictions << ",,";
+    predictions << "," << ms << "\n";
 
     std::string name = basename_noext(path);
     cv::imwrite(output_dir + "/overlay/" + name + ".png", dbg.overlay);

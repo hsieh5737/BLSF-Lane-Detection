@@ -1,0 +1,3 @@
+blank status=low_confidence dom=1 dom_ratio=0 peaks=(-1,-1)
+horizontal status=low_confidence dom=1 dom_ratio=0 peaks=(-1,-1)
+vertical status=ok dom=1 dom_ratio=1 peaks=(179,449)

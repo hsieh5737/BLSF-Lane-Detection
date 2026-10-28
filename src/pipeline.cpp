@@ -7,6 +7,7 @@
 namespace blsf {
 
 bool load_config_yaml(const std::string& path, Config& cfg) {
+  try {
   cv::FileStorage fs(path, cv::FileStorage::READ);
   if (!fs.isOpened()) return false;
 
@@ -32,11 +33,15 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
   fs["blsf"]["a2_hi"] >> cfg.blsf.a2_hi;
   fs["blsf"]["delta_theta"] >> cfg.blsf.delta_theta;
   fs["blsf"]["min_total_vote"] >> cfg.blsf.min_total_vote;
-  fs["blsf"]["min_dom_ratio"] >> cfg.blsf.min_dom_ratio;
   fs["blsf"]["draw_thickness"] >> cfg.blsf.draw_thickness;
 
   fs["features"]["source"] >> cfg.feat_source;
-  fs["features"]["hybrid_or"] >> cfg.hybrid_or;
+  // Legacy keys are rejected, never silently reinterpreted.
+  if (!fs["features"]["hybrid_or"].empty()) return false;
+  if (!fs["blsf"]["min_dom_ratio"].empty()) return false;
+  if (!fs["blsf"]["enabled"].empty()) {
+    int enabled=1; fs["blsf"]["enabled"] >> enabled; cfg.blsf_enabled = enabled != 0;
+  }
 
   fs["peaks"]["smooth_ksize"] >> cfg.peaks_smooth;
   fs["peaks"]["min_peak_value"] >> cfg.peaks_min;
@@ -50,11 +55,25 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
   fs["ransac"]["min_inliers"] >> cfg.ransac_min_inliers;
 
   fs.release();
-  return true;
+  cfg.blsf.min_len = cfg.lsd_min_len;
+  return valid_blsf_config(cfg.blsf) && cfg.ipm.bev_w > 0 && cfg.ipm.bev_h > 0 &&
+    cfg.mlt_k > 0 && cfg.n_windows > 0 && cfg.n_windows <= cfg.ipm.bev_h &&
+    cfg.margin > 0 && cfg.minpix > 0 && cfg.peaks_smooth > 0 && cfg.peaks_min > 0 &&
+    cfg.ransac_iters > 0 && cfg.ransac_thresh > 0 && cfg.ransac_min_inliers >= 3 &&
+    (cfg.feat_source == "segments_mask" || cfg.feat_source == "binary_and_segments" || cfg.feat_source == "binary");
+  } catch (const cv::Exception&) {
+    return false;
+  }
 }
 
 RunResult run_pipeline(const cv::Mat& bgr, Config& cfg, DebugPack& dbg) {
   RunResult rr;
+  cfg.blsf.min_len = cfg.lsd_min_len;
+  if (!valid_blsf_config(cfg.blsf) ||
+      (cfg.feat_source != "segments_mask" && cfg.feat_source != "binary_and_segments" && cfg.feat_source != "binary")) {
+    rr.status = "invalid_configuration";
+    return rr;
+  }
 
   // 1) IPM
   dbg.bev_bgr = warp_to_bev(bgr, cfg.ipm);
@@ -73,14 +92,15 @@ RunResult run_pipeline(const cv::Mat& bgr, Config& cfg, DebugPack& dbg) {
 
   // 5) BLSF
   std::vector<Segment> segf;
-  blsf_filter(segs, segf, cfg.blsf, rr.vote);
+  if (cfg.blsf_enabled) blsf_filter(segs, segf, cfg.blsf, rr.vote);
+  else segf = segs; // paired ablation, retaining the same LSD length rule
   dbg.seg_after = draw_segments(bin_bgr, segf, cv::Scalar(0,255,0), 2);
 
   if (rr.vote.low_confidence) {
     rr.status = "low_confidence";
     dbg.seg_mask = cv::Mat::zeros(dbg.binary.size(), CV_8U);
-    dbg.feat_used = dbg.binary.clone();
-    cv::cvtColor(dbg.binary, dbg.windows_img, cv::COLOR_GRAY2BGR);
+    dbg.feat_used = dbg.seg_mask.clone();
+    cv::cvtColor(dbg.feat_used, dbg.windows_img, cv::COLOR_GRAY2BGR); // empty tracker input, no binary fallback
     dbg.overlay = dbg.bev_bgr.clone();
     return rr;
   }
@@ -88,12 +108,8 @@ RunResult run_pipeline(const cv::Mat& bgr, Config& cfg, DebugPack& dbg) {
   // 6) seg_mask + feature selection
   dbg.seg_mask = segments_mask(segf, dbg.binary.cols, dbg.binary.rows, cfg.blsf.draw_thickness);
 
-  if (cfg.feat_source == "segments_mask") dbg.feat_used = dbg.seg_mask.clone();
-  else if (cfg.feat_source == "binary") dbg.feat_used = dbg.binary.clone();
-  else {
-    if (cfg.hybrid_or) cv::bitwise_or(dbg.binary, dbg.seg_mask, dbg.feat_used);
-    else cv::addWeighted(dbg.binary, 0.5, dbg.seg_mask, 0.5, 0.0, dbg.feat_used);
-  }
+  dbg.feat_used = select_features(dbg.binary, dbg.seg_mask, cfg.feat_source);
+  cv::cvtColor(dbg.feat_used, dbg.windows_img, cv::COLOR_GRAY2BGR);
 
   // 7) peaks
   rr.peaks = find_initial_peaks(dbg.feat_used, cfg.peaks_smooth, cfg.peaks_min);

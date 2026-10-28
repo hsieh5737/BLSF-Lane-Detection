@@ -1,0 +1,48 @@
+%YAML:1.0
+---
+ipm:
+  bev_width: 640
+  bev_height: 480
+
+gray:
+  w_r: 0.5
+  w_g: 0.4
+  w_b: 0.1
+
+mlt:
+  median_ksize: 9
+  offset_t: 15
+
+lsd:
+  min_len: 17.0
+  min_abs_angle: 0.0
+  max_abs_angle: 35.0
+
+blsf:
+  enabled: 1
+  a0_lo: -35.0
+  a0_hi: 0.0
+  a1_lo: -5.0
+  a1_hi: 5.0
+  a2_lo: 0.0
+  a2_hi: 35.0
+  delta_theta: 0.0
+  min_total_vote: 300.0
+  draw_thickness: 2
+
+features:
+  source: "segments_mask"
+
+peaks:
+  smooth_ksize: 9
+  min_peak_value: 50
+
+tracker:
+  n_windows: 12
+  margin: 60
+  minpix: 40
+
+ransac:
+  iters: 200
+  inlier_thresh: 10.0
+  min_inliers: 80
