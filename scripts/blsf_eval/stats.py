@@ -32,10 +32,12 @@ def f1_from_counts(c):
         return np.where(denom > 0, 2 * tp / np.maximum(denom, 1), 0.0)
 
 
-def bootstrap_f1(counts, iters, seed, paired_counts=None):
+def bootstrap_f1(counts, iters, seed, paired_counts=None, chunk=50):
     """Frame-level bootstrap of F1 (and of F1 difference when paired_counts given).
 
     counts: (n_frames, 3) per-frame tp, fp, fn.  Returns dict with 95% percentile CIs.
+    Resamples are drawn in chunks of rows from one generator, which yields the same
+    index stream as drawing all iters x n_frames at once but bounds memory.
     """
     counts = np.asarray(counts, dtype=np.int64)
     n = len(counts)
@@ -43,15 +45,24 @@ def bootstrap_f1(counts, iters, seed, paired_counts=None):
     out = {}
     if n == 0:
         return {"f1_ci": [float("nan")] * 2}
-    idx = rng.integers(0, n, size=(iters, n))
-    f = f1_from_counts(counts[idx].sum(axis=1))
-    out["f1_ci"] = [float(np.percentile(f, 2.5)), float(np.percentile(f, 97.5))]
+    pc = None
     if paired_counts is not None:
         pc = np.asarray(paired_counts, dtype=np.int64)
         if pc.shape != counts.shape:
             raise ValueError("paired counts must cover the same frames")
-        g = f1_from_counts(pc[idx].sum(axis=1))
-        d = f - g
+    f_all, g_all = [], []
+    done = 0
+    while done < iters:
+        k = min(chunk, iters - done)
+        idx = rng.integers(0, n, size=(k, n))
+        f_all.append(f1_from_counts(counts[idx].sum(axis=1)))
+        if pc is not None:
+            g_all.append(f1_from_counts(pc[idx].sum(axis=1)))
+        done += k
+    f = np.concatenate(f_all)
+    out["f1_ci"] = [float(np.percentile(f, 2.5)), float(np.percentile(f, 97.5))]
+    if pc is not None:
+        d = f - np.concatenate(g_all)
         out["delta_f1_ci"] = [float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))]
         out["delta_f1_p_le_0"] = float(np.mean(d <= 0))
     return out
