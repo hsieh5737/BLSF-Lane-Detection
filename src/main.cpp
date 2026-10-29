@@ -56,6 +56,7 @@ int main(int argc, char** argv) {
   std::string debug_dir="outputs/debug";
   std::string config_path="configs/default.yaml";
   bool reuse_h=false;
+  bool no_debug=false;
   std::string homography_path;
   cv::setNumThreads(1);
 
@@ -66,12 +67,13 @@ int main(int argc, char** argv) {
     else if (a=="--debug_dir" && i+1<argc) debug_dir = argv[++i];
     else if (a=="--config" && i+1<argc) config_path = argv[++i];
     else if (a=="--reuse_h") reuse_h=true;
+    else if (a=="--no_debug") no_debug=true;
     else if (a=="--homography" && i+1<argc) homography_path=argv[++i];
     else { std::cerr << "Unknown or incomplete argument: " << a << "\n"; return 1; }
   }
 
   if (input_dir.empty()) {
-    std::cerr << "Usage: blsf_lane --input_dir <folder> [--output_dir ...] [--debug_dir ...] [--config ...] [--homography <file> | --reuse_h]\n";
+    std::cerr << "Usage: blsf_lane --input_dir <folder> [--output_dir ...] [--debug_dir ...] [--config ...] [--homography <file> | --reuse_h] [--no_debug]\n";
     return 1;
   }
 
@@ -82,8 +84,10 @@ int main(int argc, char** argv) {
   }
 
   ensure_dir(output_dir);
-  ensure_dir(debug_dir);
-  ensure_dir(output_dir + "/overlay");
+  if (!no_debug) {
+    ensure_dir(debug_dir);
+    ensure_dir(output_dir + "/overlay");
+  }
 
   std::vector<std::string> images;
   if (!list_images(input_dir, images)) {
@@ -144,8 +148,10 @@ int main(int argc, char** argv) {
     predictions << "," << ms << "\n";
 
     std::string name = basename_noext(path);
-    cv::imwrite(output_dir + "/overlay/" + name + ".png", dbg.overlay);
-    save_debug_pack(debug_dir, name, dbg);
+    if (!no_debug) {
+      cv::imwrite(output_dir + "/overlay/" + name + ".png", dbg.overlay);
+      save_debug_pack(debug_dir, name, dbg);
+    }
 
     std::cout << name << " status=" << rr.status
               << " dom=" << rr.vote.dom << " dom_ratio=" << rr.vote.dom_ratio

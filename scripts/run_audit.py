@@ -13,6 +13,7 @@ def sha(p):
 def main():
     p=argparse.ArgumentParser()
     for a in ("binary","config","input_dir","homography","output_dir"):p.add_argument("--"+a,required=True)
+    p.add_argument("--no_debug",action="store_true",help="skip per-frame debug and overlay images")
     a=p.parse_args()
     out=pathlib.Path(a.output_dir).resolve()
     if out.exists() and any(out.iterdir()):p.error("output_dir must be empty, preserving earlier runs")
@@ -25,8 +26,9 @@ def main():
     if not files:p.error("No images")
     if len({x.stem for x in files}) != len(files):p.error("Image stems must be unique to avoid debug-output collisions")
     cmd=[str(binary),"--config",str(config),"--input_dir",str(inputs),"--homography",str(homography),"--output_dir",str(out),"--debug_dir",str(out/"debug")]
+    if a.no_debug:cmd.append("--no_debug")
     repo=pathlib.Path(__file__).resolve().parents[1]
-    code=[x for d in ("src","configs","scripts") for x in sorted((repo/d).glob("*")) if x.is_file()]
+    code=[x for d in ("src","configs","scripts") for x in sorted((repo/d).rglob("*")) if x.is_file() and "__pycache__" not in x.parts]
     manifest={"schema":"blsf-new-run-v1","historical_reproduction":False,"command":cmd,
       "started_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
       "platform":platform.platform(),"machine":platform.machine(),"processor":platform.processor(),

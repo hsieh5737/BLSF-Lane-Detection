@@ -1,0 +1,23 @@
+{
+  "_comment": "Template. Copy to culane_paper_nominal.local.json, set root to your ASCII-only CULane path, add calibration frames to exclude only if they come from an evaluated list (they should not).",
+  "name": "culane_paper_nominal",
+  "dataset": "culane",
+  "root": "D:/datasets/CULane",
+  "subsets": {
+    "dazzle": "list/test_split/test2_hlight.txt",
+    "night": "list/test_split/test8_night.txt",
+    "curve": "list/test_split/test6_curve.txt",
+    "normal": "list/test_split/test0_normal.txt"
+  },
+  "exclude": [],
+  "homographies": {
+    "driver_37_30frame": "calibration/culane_driver_37_30frame.yml",
+    "driver_100_30frame": "calibration/culane_driver_100_30frame.yml",
+    "driver_193_90frame": "calibration/culane_driver_193_90frame.yml"
+  },
+  "conditions": {
+    "with_blsf": "configs/paper_nominal.yaml",
+    "without_blsf": "configs/paper_nominal_ablation_no_blsf.yaml"
+  },
+  "eval": {"line_width_px": 10, "iou_threshold": 0.5, "min_gt_rows": 100, "bootstrap": 2000, "seed": 20261029}
+}

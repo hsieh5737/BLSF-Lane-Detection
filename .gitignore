@@ -2,3 +2,5 @@ build/
 outputs/
 __pycache__/
 *.pyc
+work/
+experiments/*.local.json

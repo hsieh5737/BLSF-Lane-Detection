@@ -87,19 +87,38 @@ represent, using tan(theta_pixel) = (sx/sy) tan(theta_physical).
 Paper values: Sm=9, Tg=15, T1=17. Other pixel-unit values in
 `paper_nominal.yaml` are proportional conversions from 640x480, fixed before
 any evaluation: kx = 225/640 for lateral sizes, ky = 300/480 for forward sizes,
-and pixel counts scaled by line thickness ratio x ky.
+and pixel counts scaled by line thickness ratio x ky. The one exception,
+`peaks.min_peak_value`, was set from synthetic frames before any real frame
+(`docs/EVAL_PROTOCOL.md`, `evidence/validation/synthetic_sensitivity.md`).
 
 | Key | 640x480 | 225x300 | Rule |
 |---|---|---|---|
 | blsf.min_total_vote | 300 | 187.5 | x ky |
 | blsf.draw_thickness | 2 | 1 | x kx, min 1 |
 | peaks.smooth_ksize | 9 | 3 | x kx, odd |
-| peaks.min_peak_value | 50 | 31 | x ky |
+| peaks.min_peak_value | 50 | 12 | not proportional (31 would be); see protocol section 5 |
 | tracker.n_windows | 12 | 12 | count |
 | tracker.margin | 60 | 21 | x kx |
 | tracker.minpix | 40 | 13 | x (1/2) x ky |
 | ransac.inlier_thresh | 10 | 3.5 | x kx |
 | ransac.min_inliers | 80 | 25 | x (1/2) x ky |
+
+## Pre-registered experiment
+
+`docs/EVAL_PROTOCOL.md` fixes data, calibration, parameters and metrics before
+any run. Workflow:
+
+1. Calibrate one homography per CULane test folder from a frame of a
+   non-evaluated list:
+   `python3 scripts/make_homography.py --image <frame> --pick --rect_w_m 3.75 --rect_l_m 15 --out calibration/culane_<folder>.yml --preview calibration/culane_<folder>.png`
+2. Commit the calibration files and previews.
+3. Copy `experiments/culane_paper_nominal.json` to `*.local.json`, set `root`.
+4. `python3 scripts/run_experiment.py --spec experiments/culane_paper_nominal.local.json --binary build/blsf_lane --work_dir work/culane_paper_nominal`
+5. Archive the whole work directory; report `results/summary.md` and
+   `results/summary.json` unchanged.
+
+On Windows (MSYS2 UCRT64) all paths must be ASCII-only; see `docs/RUN_WINDOWS.md`.
+`tests/test_eval_pipeline.py` runs the same chain on rendered synthetic frames.
 
 ## Angle contract
 

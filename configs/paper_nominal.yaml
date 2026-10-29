@@ -41,7 +41,7 @@ features:
 
 peaks:
   smooth_ksize: 3          # 9 x kx -> 3 (odd)
-  min_peak_value: 31       # 50 x ky
+  min_peak_value: 12       # NOT proportional: one 2 m dash (40 rows)/3-col smoothing; see protocol
 
 tracker:
   n_windows: 12            # count, unscaled
