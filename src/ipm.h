@@ -16,5 +16,9 @@ cv::Mat warp_to_bev(const cv::Mat& frame, const IPM& ipm);
 
 bool save_homography(const std::string& path, const IPM& ipm);
 bool load_homography(const std::string& path, IPM& ipm);
+// Loads a homography only if its stored BEV size equals ipm.bev_w x ipm.bev_h
+// (the configured size). Pixel-unit thresholds and angle bands are defined for
+// one BEV grid, so a size mismatch is rejected instead of silently adopted.
+bool load_homography_matching(const std::string& path, IPM& ipm);
 
 } // namespace blsf

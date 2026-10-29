@@ -18,7 +18,8 @@ PASS feature_rejected_pixel_stays_removed
 DATA vertical_rectangles input=4 kept=4
 PASS synthetic_lsd_vertical
 PASS configuration_and_paired_ablation
+PASS homography_size_must_match_config
 PASS pipeline_blank_rejects_and_clears
 DATA full_pipeline left_c=178 right_c=448
 PASS pipeline_synthetic_and_ablation
-21 regression cases passed; OpenCV 4.6.0
+22 regression cases passed; OpenCV 4.6.0

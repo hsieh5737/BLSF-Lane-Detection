@@ -93,8 +93,9 @@ int main(int argc, char** argv) {
   std::string H_path = output_dir + "/homography.yml";
   if (reuse_h || !homography_path.empty()) {
     if (!homography_path.empty()) H_path=homography_path;
-    if (!load_homography(H_path, cfg.ipm)) {
-      std::cerr << "reuse_h requested but homography not found: " << H_path << "\n";
+    if (!load_homography_matching(H_path, cfg.ipm)) {
+      std::cerr << "Homography missing, unreadable, or its BEV size differs from the config ("
+                << cfg.ipm.bev_w << "x" << cfg.ipm.bev_h << "): " << H_path << "\n";
       return 1;
     }
   } else {

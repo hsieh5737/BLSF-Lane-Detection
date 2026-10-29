@@ -104,13 +104,11 @@ published Table 7. The segment mask is an intermediate feature, not a lane
 prediction mask. Before evaluation, generate prediction masks from the fitted
 polynomials using a declared line width and coordinate transform.
 
-## Evidence and publication text
+## Evidence
 
 - `evidence/upstream/`: unchanged original files, including original README.
 - `evidence/upstream_manifest.json`: exact upstream blob hashes.
 - `evidence/validation/`: observed local regression and smoke-run outputs.
-- `publication/`: author-review response drafts and proposed manuscript text.
-- `repair.patch`: tracked source/config changes plus new implementation files.
 
 Preserve the original repository revision and publish a new correction commit
 after author review. Do not replace the original history or call this package

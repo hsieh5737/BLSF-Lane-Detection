@@ -75,4 +75,17 @@ bool load_homography(const std::string& path, IPM& ipm) {
   return ipm.ready;
 }
 
+bool load_homography_matching(const std::string& path, IPM& ipm) {
+  IPM loaded;
+  try {
+    if (!load_homography(path, loaded)) return false;
+  } catch (const cv::Exception&) {
+    return false;
+  }
+  if (loaded.bev_w != ipm.bev_w || loaded.bev_h != ipm.bev_h) return false;
+  if (loaded.H.rows != 3 || loaded.H.cols != 3) return false;
+  ipm = loaded;
+  return true;
+}
+
 } // namespace blsf

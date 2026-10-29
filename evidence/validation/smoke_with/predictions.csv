@@ -1,5 +1,5 @@
 image,status,ok,dom,B0,B1,B2,unique_vote,retained_vote,dom_ratio,TL,TU,left_valid,left_a,left_b,left_c,right_valid,right_a,right_b,right_c,pipeline_ms
-"/home/claude/runs/input/blank.png",low_confidence,0,1,0,0,0,0,0,0,0,0,0,,,,0,,,,19.228518999999999
-"/home/claude/runs/input/horizontal.png",low_confidence,0,1,0,0,0,0,0,0,0,0,0,,,,0,,,,11.9581
-"/home/claude/runs/input/unreadable.png",unreadable_image,0,,,,,,,,,,0,,,,0,,,,
-"/home/claude/runs/input/vertical.png",ok,1,1,877.5,1752.5,875,1752.5,1752.5,1,-5,5,1,0,0,178,1,0,0,448,13.360198
+"/home/claude/runs3/input/blank.png",low_confidence,0,1,0,0,0,0,0,0,0,0,0,,,,0,,,,15.345413000000001
+"/home/claude/runs3/input/horizontal.png",low_confidence,0,1,0,0,0,0,0,0,0,0,0,,,,0,,,,10.151491999999999
+"/home/claude/runs3/input/unreadable.png",unreadable_image,0,,,,,,,,,,0,,,,0,,,,
+"/home/claude/runs3/input/vertical.png",ok,1,1,877.5,1752.5,875,1752.5,1752.5,1,-5,5,1,0,0,178,1,0,0,448,11.891660999999999
