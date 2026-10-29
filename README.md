@@ -1,5 +1,16 @@
 # BLSF corrected candidate
 
+> **Correction notice (2026-10-29).** A PubPeer comment on
+> *Electronics* 2026, 15, 351 (https://doi.org/10.3390/electronics15020351)
+> showed that the originally released code did not consistently implement the
+> method described in the article (angle convention, orientation gating,
+> low-evidence rejection and tracker input). The main branch now contains a
+> corrected implementation. It is not the program that produced the originally
+> reported results; reconciliation of those results is in progress, and this
+> implementation may still change during validation. The original release is
+> preserved unchanged at commit
+> [830a62f](https://github.com/hsieh5737/BLSF-Lane-Detection/tree/830a62f5eaf4bd1d74bc3be11451881cc3c9a0cf).
+
 This package repairs the released C++ snapshot
 `830a62f5eaf4bd1d74bc3be11451881cc3c9a0cf`.
 Read [RECONSTRUCTION_STATUS.txt](RECONSTRUCTION_STATUS.txt) before using it.
