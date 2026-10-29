@@ -1,0 +1,32 @@
+{
+  "driver_37_30frame": {
+    "qa_frames": 25,
+    "lane_width_m_median": 4.11,
+    "lane_width_m_iqr": [
+      3.81,
+      4.36
+    ],
+    "ego_line_angle_deg_median_abs": 1.25,
+    "ego_line_angle_deg_p90_abs": 3.53
+  },
+  "driver_100_30frame": {
+    "qa_frames": 25,
+    "lane_width_m_median": 4.44,
+    "lane_width_m_iqr": [
+      4.14,
+      4.65
+    ],
+    "ego_line_angle_deg_median_abs": 0.85,
+    "ego_line_angle_deg_p90_abs": 1.89
+  },
+  "driver_193_90frame": {
+    "qa_frames": 25,
+    "lane_width_m_median": 3.47,
+    "lane_width_m_iqr": [
+      3.27,
+      3.66
+    ],
+    "ego_line_angle_deg_median_abs": 1.05,
+    "ego_line_angle_deg_p90_abs": 2.43
+  }
+}

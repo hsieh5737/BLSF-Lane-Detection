@@ -1,0 +1,32 @@
+{
+  "driver_37_30frame": {
+    "key": "driver_37_30frame/05181608_0235.MP4/03750.jpg",
+    "dashed_side": "R",
+    "vanishing_row": 265.3,
+    "far_dash_far_end": 292,
+    "far_dash_near_end": 302,
+    "near_dash_far_end": 355,
+    "dash_fraction": 0.388,
+    "points": "725.38,292.00;799.04,292.00;873.72,355.00;626.42,355.00"
+  },
+  "driver_100_30frame": {
+    "key": "driver_100_30frame/05250538_0313.MP4/00300.jpg",
+    "dashed_side": "L",
+    "vanishing_row": 305.8,
+    "far_dash_far_end": 332,
+    "far_dash_near_end": 341,
+    "near_dash_far_end": 376,
+    "dash_fraction": 0.408,
+    "points": "715.51,332.00;787.10,332.00;870.52,376.00;678.80,376.00"
+  },
+  "driver_193_90frame": {
+    "key": "driver_193_90frame/06050933_0603.MP4/02700.jpg",
+    "dashed_side": "L",
+    "vanishing_row": 271.3,
+    "far_dash_far_end": 300,
+    "far_dash_near_end": 312,
+    "near_dash_far_end": 384,
+    "dash_fraction": 0.396,
+    "points": "753.88,300.00;846.08,300.00;1040.39,384.00;678.18,384.00"
+  }
+}
