@@ -1,0 +1,106 @@
+PROPOSED MANUSCRIPT TEXT FOR AUTHOR AND EDITOR REVIEW
+These paragraphs describe the corrected candidate, not a recovered historical
+implementation. They require an explicit version reference in any correction.
+They do not establish that the original reported results remain valid.
+
+Section 2.2: angle convention and voting
+
+Let the BEV image x-axis point rightward and its y-axis downward. For endpoints
+(x1,y1) and (x2,y2), let dx=x2-x1 and dy=y2-y1. We define the undirected
+segment orientation as theta=wrap_[-90,90)(atan2(dx,-dy)*180/pi). Vertical
+segments have theta=0 regardless of endpoint order. Positive theta denotes a
+rightward displacement as y decreases. Zero-length or nonfinite segments are
+excluded. The length criterion is tau_i>T1.
+
+In the corrected candidate, the closed voting bands are A0=[-35,0],
+A1=[-5,5], and A2=[0,35] degrees in BEV pixel coordinates. Overlapping
+membership is retained: a segment can contribute its length to more than one
+band score. Only segments with |theta|<=35 degrees are admissible; this
+overall envelope is fixed. The frame is assigned a low-confidence state when
+all bin scores remain below an absolute threshold, max(B0,B1,B2)<Bmin. Because
+the selected band coincides with the winning bin, max(B0,B1,B2) equals the
+total length of the segments passed to the tracker, so overlapping membership
+cannot cause or prevent rejection. A low-confidence state is not a verified
+absence of painted lanes. No dominance-ratio criterion is applied: since A0 and
+A2 jointly cover the admissible domain, max(B0,B1,B2) is at least half of the
+unique eligible length in every frame. Ties prefer A1, then A0, then A2. The
+selected band's closed bounds are used without additional expansion. These
+conventions explicitly specify the corrected implementation and should not be
+presented as recovered historical experimental settings.
+
+Section 2.2: tracker input
+
+Let B be the binary foreground after median local thresholding and S the
+0/255 rasterized mask of retained segments. The corrected default uses
+F=S as the input to peak detection and sliding-window tracking. It does not
+use F=B union S. Rasterization, line thickness and rounding can make S contain
+pixels outside B; thus S subset B is not assumed. The alternative F=B
+intersection S has different semantics and must be separately identified and
+evaluated. Low-evidence rejection produces no current-frame lane prediction
+and does not invoke an unfiltered-binary fallback.
+
+Sections 2.3 and 2.5: operating scope
+
+The geometric prior applies only when the retained lane evidence is sufficiently
+represented within the selected global angular band after calibrated BEV
+mapping. The overall 35-degree envelope is a necessary admissibility condition;
+it is not a guarantee that all orientations within that envelope are retained,
+because the selected straight band is only [-5,5] degrees. A downstream
+sliding-window tracker can follow the surviving evidence but cannot recover
+segments removed by BLSF. Translating an axis-aligned window does not rotate
+its coordinate system. Strong curvature, incorrect IPM, nonplanar surfaces,
+unfavorable pixel scaling, occlusion and dominant lane-like clutter can violate
+these assumptions. Local processing before orientation filtering would constitute
+a distinct method variant requiring separate evaluation.
+
+Section 4.2: geometric angle and curvature
+
+Pixel orientation and physical road heading must be distinguished. Under an
+ideal metric BEV with image scales sx and sy in pixels per metre,
+tan(theta_pixel)=(sx/sy)*dx_metric/dy_metric. Consequently the physical heading
+limit corresponding to a pixel-angle limit alpha_pixel is
+alpha_metric=atan((sy/sx)*tan(alpha_pixel)), subject to valid mapping and the
+chosen angular band. If sx=sy, heading and pixel angle agree.
+
+For a circular lane, zero initial heading and an isotropically scaled metric
+BEV, a look-ahead arc length S implies a heading change S/R. An angular
+envelope alpha therefore yields the necessary relation R>=S/alpha, with alpha
+in radians. If the look-ahead variable instead denotes the forward coordinate
+distance Y, the corresponding circular geometry gives R>=Y/sin(alpha).
+At 40 m and 35 degrees, these illustrative bounds are approximately 65.5 m
+and 69.7 m, respectively. They are conditional geometric illustrations, not
+validated universal detection limits. Nonzero initial heading, yaw error,
+anisotropic scaling, the selected band and surviving support alter the
+applicable condition.
+
+For an axis-aligned tracker with forward step dy, the lateral motion contains
+a first-order tangent term. For locally circular geometry away from
+cos(psi)=0, it can be approximated in ground coordinates by
+dx=tan(psi)*dy + dy^2/(2R*cos(psi)^3).
+After conversion to the actual pixel scales, the magnitude of the displacement
+and uncertainty must lie within the available capture margin. A curvature-only
+sagitta bound applies in a tangent-aligned frame under its assumptions, not
+automatically in a translated axis-aligned BEV window. Initialization and
+support sufficiency remain necessary and this approximation is not a detection
+guarantee.
+
+Section 4: paired ablation definition for a NEW experiment
+
+The corrected candidate and its no-BLSF control share the same preprocessing,
+LSD extraction, minimum-length rule, mask rasterization, peak detection,
+tracking and fixed-seed RANSAC settings. The ablation disables angular
+voting/gating and the associated low-evidence rejection together. Its effect
+therefore measures the entire BLSF stage. Separating the angular-filter and
+frame-rejection contributions requires an additional pre-specified control.
+Every failed or rejected frame remains in the evaluation list. No parameters
+are selected using the test set. Results from this experiment must be labelled
+as new results and linked to a version, configuration, frame manifest, prediction
+files and exact evaluator.
+
+Data and code availability
+
+State separately which historical experimental artifacts have been recovered,
+which remain unavailable, and which belong to the new corrected candidate.
+A new implementation or rerun must not be described as the original program
+or evidence of the original experimental provenance. Replace this instruction
+with verified repository revisions and artifact locations before publication.

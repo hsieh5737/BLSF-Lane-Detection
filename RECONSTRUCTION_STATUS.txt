@@ -1,0 +1,37 @@
+Corrected candidate prepared 2026-10-28
+
+Upstream repository: https://github.com/hsieh5737/BLSF-Lane-Detection
+Verified upstream snapshot: 830a62f5eaf4bd1d74bc3be11451881cc3c9a0cf
+Upstream commit metadata date: 2025-12-30T03:01:51Z
+All 26 source/config/document blobs were checked against their upstream Git hashes.
+The complete unmodified snapshot is retained under evidence/upstream.
+
+This is a repair derived from the released C++ snapshot. It is not a recovered
+historical experiment, and does not reproduce or validate Tables 6 and 7.
+No original frames, annotations, per-frame predictions, evaluation scripts,
+experimental homographies, or ARM timing logs were supplied with this request.
+The upstream history available at main contains the initial release snapshot;
+it does not establish a separate earlier correct implementation.
+
+Default repair choices are NEW and explicit:
+  upward-vertical undirected angle, interval [-90,90);
+  closed published bins [-35,0], [-5,5], [0,35]; fixed +/-35 envelope;
+  no exclusion around zero and no angle-band expansion;
+  low-evidence rejection when max(B0,B1,B2) < threshold (= retained support);
+  no dominance-ratio gate (ratio >= 0.5 by construction; diagnostic only);
+  tie order straight, left, right;
+  strict length > T1; retained segment mask only, 0/255 rasterization;
+  no binary fallback after rejection.
+
+Existing default MLT=11 and T1=20 are retained except for strict > boundary.
+configs/paper_nominal_proposed.yaml is an explicitly PROPOSED alternative using
+MLT=9 and T1=17 from the paper, at the same default 640x480 resolution.
+It is not an exact historical configuration. The paper describes 225x300 BEV;
+calibration/homography and physical support at that resolution remain missing.
+
+The code still uses dynamic vectors, OpenCV allocation and a fixed-seed RANSAC.
+It does not establish static memory, WCET, functional safety certification,
+measured ARM throughput, or the original reported accuracy.
+
+No remote repository was modified; the available GitHub connection is read-only.
+No PubPeer comment or editor communication was sent.

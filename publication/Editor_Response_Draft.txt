@@ -1,0 +1,18 @@
+Subject: Initial technical response and proposed correction scope for Electronics 2026, 15, 351
+
+Dear Editor,
+
+Thank you for bringing the PubPeer concerns regarding our article, "Real-Time Deterministic Lane Detection on CPU-Only Embedded Systems via Binary Line Segment Filtering," to our attention.
+
+Review of the released C++ snapshot identified two discrepancies relevant to the comment: the segment orientation is referenced to the horizontal image axis while the article discusses near-vertical BEV lanes as approximately zero degrees; and the default union of the original binary image with the retained-segment mask preserves original foreground structures in the tracker input. The near-zero exclusion, overlapping-vote confidence calculation and expanded angular bounds also require explicit correction.
+
+A corrected candidate and local synthetic regression evidence have been prepared. The candidate uses a vertical-reference undirected angle, a fixed 35-degree envelope with the published orientation bands and no expansion, an absolute evidence threshold applied to the retained segment support in place of the overlap-sensitive ratio test, and retained-mask tracker input. The package preserves the unchanged released snapshot and distinguishes the new implementation from the historical experiments. Local tests confirm the identified implementation behavior and the candidate's behavior on controlled inputs; they do not validate the published benchmark results or ARM runtime.
+
+The available materials do not yet establish the experimental code revision, configurations, per-frame predictions or evaluation scripts underlying Tables 6 and 7. We cannot therefore currently conclude that those numerical results are unaffected. We propose to reconcile those artifacts and provide a table-by-table impact assessment, identifying any records that cannot be recovered. Any rerun would be identified as a new experiment, with its settings and outputs preserved.
+
+We also propose clarifying the geometric operating limits and removing any suggestion that downstream tracking can restore evidence already eliminated by the global filter. The classification and extent of a formal publication update should be determined from the evidence in consultation with the Editorial Office and Academic Editor.
+
+Please consider the enclosed technical findings and proposed text as an initial response. A final statement about the published results should follow the experimental-artifact reconciliation rather than precede it.
+
+Sincerely,
+Shang-En Tsai

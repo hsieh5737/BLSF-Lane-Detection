@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-28",
+  "cxx_opencv": "4.6.0",
+  "python_opencv": "5.0.0",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "scope": "synthetic regression only; not original benchmark or ARM hardware"
+}

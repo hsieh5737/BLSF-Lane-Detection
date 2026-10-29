@@ -1,76 +1,28 @@
 cmake_minimum_required(VERSION 3.16)
-
-# Project name (CMake does NOT allow spaces)
 project(BLSF_Lane_Detection LANGUAGES CXX)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Default to Release if not specified (important on ARM)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
-
-find_package(OpenCV REQUIRED)
-
-# Executable name (this is the actual binary name)
-add_executable(blsf_lane
-  src/main.cpp
-  src/pipeline.cpp
-  src/pipeline.h
-  src/ipm.cpp
-  src/ipm.h
-  src/preprocess.cpp
-  src/preprocess.h
-  src/mlt.cpp
-  src/mlt.h
-  src/lsd.cpp
-  src/lsd.h
-  src/blsf.cpp
-  src/blsf.h
-  src/init_peaks.cpp
-  src/init_peaks.h
-  src/tracker.cpp
-  src/tracker.h
-  src/ransac_fit.cpp
-  src/ransac_fit.h
-  src/visualize.cpp
-  src/visualize.h
-  src/utils.cpp
-  src/utils.h
-)
-
-target_include_directories(blsf_lane PRIVATE
-  ${OpenCV_INCLUDE_DIRS}
-  src
-)
-
-target_link_libraries(blsf_lane PRIVATE
-  ${OpenCV_LIBS}
-)
-
-# --- Performance flags (safe defaults for ARM / embedded) ---
-target_compile_options(blsf_lane PRIVATE
-  -O3
-  -DNDEBUG
-)
-
-# Optional: reduce binary size / improve determinism
-# Comment out if any dependency requires RTTI / exceptions
-target_compile_options(blsf_lane PRIVATE
-  -fno-exceptions
-  -fno-rtti
-)
-
-# Optional: ARM tuning
-# Use ONLY when compiling directly on the target device
-# target_compile_options(blsf_lane PRIVATE -mcpu=native)
-
-# Some older toolchains may require explicit filesystem linking
-# Uncomment only if linker errors occur
-# target_link_libraries(blsf_lane PRIVATE stdc++fs)
-
-# Embedded-friendly RPATH behavior
-set_target_properties(blsf_lane PROPERTIES
-  BUILD_RPATH_USE_ORIGIN ON
-)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs highgui)
+set(BLSF_SOURCES src/pipeline.cpp src/ipm.cpp src/preprocess.cpp src/mlt.cpp
+  src/lsd.cpp src/blsf.cpp src/init_peaks.cpp src/tracker.cpp src/ransac_fit.cpp
+  src/visualize.cpp src/utils.cpp)
+add_library(blsf_core ${BLSF_SOURCES})
+target_include_directories(blsf_core PUBLIC ${OpenCV_INCLUDE_DIRS} src)
+target_link_libraries(blsf_core PUBLIC ${OpenCV_LIBS})
+target_compile_options(blsf_core PRIVATE -Wall -Wextra -Wpedantic)
+add_executable(blsf_lane src/main.cpp)
+target_link_libraries(blsf_lane PRIVATE blsf_core)
+include(CTest)
+if(BUILD_TESTING)
+  add_executable(regression tests/regression.cpp)
+  target_link_libraries(regression PRIVATE blsf_core)
+  add_test(NAME regression COMMAND regression ${CMAKE_CURRENT_SOURCE_DIR})
+  add_executable(legacy_probe tests/legacy_probe.cpp evidence/upstream/src/blsf.cpp
+    evidence/upstream/src/lsd.cpp evidence/upstream/src/utils.cpp)
+  target_include_directories(legacy_probe PRIVATE evidence/upstream/src ${OpenCV_INCLUDE_DIRS})
+  target_link_libraries(legacy_probe PRIVATE ${OpenCV_LIBS})
+  add_test(NAME legacy_probe COMMAND legacy_probe)
+endif()
