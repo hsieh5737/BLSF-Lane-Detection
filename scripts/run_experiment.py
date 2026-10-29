@@ -64,21 +64,28 @@ def link_or_copy(src, dst):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--spec", required=True)
-    ap.add_argument("--binary", required=True)
+    ap.add_argument("--binary", help="required unless --eval_only")
     ap.add_argument("--work_dir", required=True)
     ap.add_argument("--resume", action="store_true", help="reuse completed runs in work_dir")
     ap.add_argument("--limit", type=int, default=0, help="DRY RUN: first N frames per subset")
+    ap.add_argument("--runs_only", action="store_true", help="stage and run, then stop (score elsewhere)")
+    ap.add_argument("--eval_only", action="store_true",
+                    help="score the runs already in work_dir (mapping.csv, runs/); no staging or runs")
     a = ap.parse_args()
+    if a.runs_only and a.eval_only:
+        raise SystemExit("--runs_only and --eval_only are exclusive")
+    if not a.eval_only and not a.binary:
+        raise SystemExit("--binary is required unless --eval_only")
 
     spec_path = Path(a.spec).resolve()
     spec = json.loads(spec_path.read_text())
     work = Path(a.work_dir).resolve()
     if os.name == "nt":  # MinGW OpenCV cannot open non-ASCII paths
-        paths = [work, Path(a.binary).resolve(), REPO, Path(spec["root"])]
+        paths = [work, REPO, Path(spec["root"])] + ([Path(a.binary).resolve()] if a.binary else [])
         bad = [str(x) for x in paths if not str(x).isascii()]
         if bad:
             raise SystemExit(f"use ASCII-only paths on Windows; offending: {bad}")
-    if work.exists() and any(work.iterdir()) and not a.resume:
+    if work.exists() and any(work.iterdir()) and not (a.resume or a.eval_only):
         raise SystemExit("work_dir must be empty (or use --resume)")
     work.mkdir(parents=True, exist_ok=True)
     root = Path(spec["root"])
@@ -108,7 +115,7 @@ def main():
         missing_h = sorted({i.group for i in items} - set(Hs))
         if missing_h:
             raise SystemExit(f"subset {name}: no homography for groups {missing_h}")
-        missing = [str(i.image) for i in items if not i.image.exists()]
+        missing = [] if a.eval_only else [str(i.image) for i in items if not i.image.exists()]
         if missing:
             raise SystemExit(f"subset {name}: {len(missing)} images missing, e.g. {missing[:5]}")
         subsets[name] = items
@@ -117,7 +124,7 @@ def main():
                 "dry_run": bool(a.limit), "limit": a.limit, "repository": git_revision(),
                 "started_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 "platform": platform.platform(), "python": sys.version, "opencv_python": cv2.__version__,
-                "binary_sha256": sha(a.binary),
+                "binary_sha256": sha(a.binary) if a.binary else None, "mode": ("eval_only" if a.eval_only else "runs_only" if a.runs_only else "full"),
                 "configs": {k: {"path": str(v), "sha256": sha(v)} for k, v in cfg.items()},
                 "homographies": {g: {"path": str(p), "sha256": sha(p)} for g, p in homs.items()},
                 "lists": {n: {"path": str(resolve(l, root)), "sha256": sha(resolve(l, root)),
@@ -126,13 +133,20 @@ def main():
     if manifest["repository"]["dirty"]:
         print("WARNING: repository has uncommitted changes; record them before reporting", file=sys.stderr)
 
+    mapping = {}
+    if a.eval_only:
+        with open(work / "mapping.csv", newline="") as fh:
+            for row in csv.DictReader(fh):
+                mapping[(row["subset"], row["staged_name"])] = row["key"]
+        listed = {(n, it.key) for n, items in subsets.items() for it in items}
+        if {(s_, k) for (s_, _), k in mapping.items()} != listed:
+            raise SystemExit("mapping.csv does not match the spec's frame lists")
     # 1) stage
     stage = work / "stage"
-    mapping = {}
-    with open(work / "mapping.csv", "w", newline="") as fh:
+    with (open(os.devnull, "w") if a.eval_only else open(work / "mapping.csv", "w", newline="")) as fh:
         w = csv.writer(fh)
         w.writerow(["subset", "group", "key", "staged_name"])
-        for name, items in subsets.items():
+        for name, items in ({} if a.eval_only else subsets).items():
             for it in items:
                 d = stage / name / it.group
                 d.mkdir(parents=True, exist_ok=True)
@@ -143,7 +157,7 @@ def main():
                 w.writerow([name, it.group, it.key, dst.name])
 
     # 2) run each condition per subset/group
-    for cond, cpath in cfg.items():
+    for cond, cpath in ({} if a.eval_only else cfg).items():
         for name, items in subsets.items():
             for g in sorted({i.group for i in items}):
                 out = work / "runs" / cond / name / g
@@ -159,6 +173,12 @@ def main():
                 r = subprocess.run(cmd)
                 if r.returncode:
                     raise SystemExit(f"run failed: {cond}/{name}/{g}")
+
+    if a.runs_only:
+        manifest["ended_utc"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        ev.dump_json(work / "run_manifest.json", manifest)
+        print("runs complete; score with --eval_only", flush=True)
+        return
 
     # 3) evaluate
     res = work / "results"
@@ -208,7 +228,7 @@ def main():
 
     manifest["ended_utc"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     manifest["result_files"] = {p.name: sha(p) for p in sorted(res.iterdir()) if p.is_file()}
-    ev.dump_json(work / "experiment_manifest.json", manifest)
+    ev.dump_json(work / ("eval_manifest.json" if a.eval_only else "experiment_manifest.json"), manifest)
     print((res / "summary.md").read_text())
 
 

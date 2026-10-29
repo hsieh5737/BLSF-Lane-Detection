@@ -105,6 +105,10 @@ python3 scripts/run_experiment.py --spec experiments/culane_paper_nominal.local.
   --binary build/blsf_lane --work_dir work/culane_paper_nominal
 ```
 
+- Running and scoring may be split across machines (`--runs_only` on the
+  machine with the images, `--eval_only` on the copied work directory plus
+  annotations); this gives the same per-frame results and summary as a
+  single run.
 - Every listed frame stays in the results: rejected (`low_confidence`),
   `no_peaks`, `fit_failed` and unreadable frames count as frames without a
   prediction.
