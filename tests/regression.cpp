@@ -69,6 +69,10 @@ int main(int argc,char** argv) {
   test("configuration_and_paired_ablation",[&]{Config a,b;check(load_config_yaml(root+"/configs/default.yaml",a),"default config");check(load_config_yaml(root+"/configs/ablation_no_blsf.yaml",b),"ablation config");
     check(a.blsf_enabled&&!b.blsf_enabled&&a.feat_source==b.feat_source&&a.lsd_min_len==b.lsd_min_len&&a.mlt_k==b.mlt_k,"paired");
     check(!load_config_yaml(root+"/evidence/upstream/configs/default.yaml",a),"legacy rejected");});
+  test("homography_size_must_match_config",[&]{std::string h=root+"/evidence/validation/synthetic_identity_homography.yml";
+    IPM a;check(load_homography_matching(h,a)&&a.bev_w==640&&a.bev_h==480,"640x480 matches");
+    IPM b;b.bev_w=225;b.bev_h=300;check(!load_homography_matching(h,b)&&b.bev_w==225&&b.bev_h==300&&b.H.empty(),"225x300 config rejects 640x480 homography");
+    IPM c;check(!load_homography_matching(root+"/no_such_file.yml",c),"missing");});
   test("pipeline_blank_rejects_and_clears",[]{Config c;c.ipm.H=cv::Mat::eye(3,3,CV_64F);c.ipm.ready=true;DebugPack d;
     auto r=run_pipeline(cv::Mat::zeros(480,640,CV_8UC3),c,d);check(!r.ok&&r.status=="low_confidence"&&!r.left.valid&&!r.right.valid,"blank status");check(cv::countNonZero(d.feat_used)==0,"no fallback");
     cv::Mat w;cv::cvtColor(d.windows_img,w,cv::COLOR_BGR2GRAY);check(cv::countNonZero(w)==0,"debug view shows empty tracker input");});

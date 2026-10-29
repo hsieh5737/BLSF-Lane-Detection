@@ -2,23 +2,23 @@
   "schema": "blsf-new-run-v1",
   "historical_reproduction": false,
   "command": [
-    "/home/claude/work/build/blsf_lane",
+    "/home/claude/upstream/build/blsf_lane",
     "--config",
-    "/home/claude/work/configs/ablation_no_blsf.yaml",
+    "/home/claude/upstream/configs/ablation_no_blsf.yaml",
     "--input_dir",
-    "/home/claude/runs/input",
+    "/home/claude/runs3/input",
     "--homography",
-    "/home/claude/runs/H.yml",
+    "/home/claude/runs3/H.yml",
     "--output_dir",
-    "/home/claude/runs/smoke_without",
+    "/home/claude/runs3/smoke_without",
     "--debug_dir",
-    "/home/claude/runs/smoke_without/debug"
+    "/home/claude/runs3/smoke_without/debug"
   ],
-  "started_utc": "2026-10-28T15:10:06.590686+00:00",
-  "platform": "Linux-6.18.44-fc-v180-x86_64-with-glibc2.39",
+  "started_utc": "2026-10-29T03:17:58.527767+00:00",
+  "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
   "machine": "x86_64",
   "processor": "x86_64",
-  "binary_sha256": "33b42d14129b6a075a41b358127371590faf79c8bd0787c8c1c669ff06509e17",
+  "binary_sha256": "952cd14d8b3234f3d8f42aed2bb2ce2b53140a18f5f2394848236cfcd22688d2",
   "config_sha256": "cf1dc7754d0ca0f2c39c1a39a2beee28d5d68caf9f9ea276ee3217957ed8ce82",
   "homography_sha256": "67d51a3c916c0fa8425dc222dfc2cf7feecf95836a6369023109f10e62a57ec3",
   "input_files": [
@@ -62,11 +62,11 @@
     },
     {
       "name": "src/ipm.cpp",
-      "sha256": "9a487c5f573b154ce1f3089ed9be01a3bbf999c66807a304d2ac40f2334016ab"
+      "sha256": "302d988d748fa00beac62bbb704b540d1e419742ee3040a6a613e2bd451cba36"
     },
     {
       "name": "src/ipm.h",
-      "sha256": "3b3795a3180a1fb05d67dee463966505eabbc32045b312ffe39fe10573f48d15"
+      "sha256": "4298d5bd02f60fb045d7732775e90a2ed7661680d2acf9db847aedc83b66cdea"
     },
     {
       "name": "src/lsd.cpp",
@@ -78,7 +78,7 @@
     },
     {
       "name": "src/main.cpp",
-      "sha256": "274236304764a34b970216ce9abae6a05bce1b5704c7a11369faeb84c194615c"
+      "sha256": "d2010173db17f8027f5522de1009b1752edbb4301db62211de9fb428a0db30f3"
     },
     {
       "name": "src/mlt.cpp",
@@ -159,7 +159,7 @@
   ],
   "timing_scope": "run_pipeline including debug-image construction; excludes image read, debug-file write and output CSV; not an ARM benchmark",
   "exit_code": 0,
-  "ended_utc": "2026-10-28T15:10:06.744178+00:00",
+  "ended_utc": "2026-10-29T03:17:58.674413+00:00",
   "output_files": [
     {
       "name": "config_used.yaml",
@@ -315,7 +315,7 @@
     },
     {
       "name": "predictions.csv",
-      "sha256": "c3eb6e99e2af13b5eacc1277ed93a5b6b6f619bf830d1063b294fe811a620ccb"
+      "sha256": "b40843c476953fa4e9256a7e565ed69b7e4bbb2486a14d0ef0cb872fc95cefdb"
     },
     {
       "name": "stderr.log",
