@@ -1,0 +1,6 @@
+opencv,4.6.0
+case,input,retained,low_confidence
+vertical_rectangles,4,0,1
+horizontal_reference_80,2,0,1
+horizontal_reference_30,2,2,0
+axis_and_min_angle_only,2,0,1

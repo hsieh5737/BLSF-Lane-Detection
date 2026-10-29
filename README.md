@@ -1,108 +1,115 @@
+# BLSF corrected candidate
 
----
+This package repairs the released C++ snapshot
+`830a62f5eaf4bd1d74bc3be11451881cc3c9a0cf`.
+Read [RECONSTRUCTION_STATUS.txt](RECONSTRUCTION_STATUS.txt) before using it.
 
-# BLSF Lane Detection
+It is a new corrected candidate, not a recovered experiment and not validation of
+the published Tables 6 and 7. Original data, annotations, evaluator and ARM logs
+remain necessary.
 
-Real-Time Deterministic Lane Detection on CPU-Only Embedded Systems via Binary Line Segment Filtering
+## Build and verify
 
-This repository provides the official C++ implementation of the paper Real-Time Deterministic Lane Detection on CPU-Only Embedded Systems via Binary Line Segment Filtering.
-Binary Line Segment Filtering (BLSF) is a lightweight lane detection algorithm specifically designed for CPU-only embedded systems, and it demonstrates strong robustness under challenging visual conditions, including strong backlighting, heavy rain, nighttime scenarios, and low-contrast road environments.
-
-The implementation is developed with explainability and real-time determinism as the primary design goals.
-By avoiding computationally expensive and latency-unpredictable deep learning models, the system is well suited for deployment on resource-constrained on-board computers, such as ARM-based platforms.
-
----
-
-## Key Features
-
-
-  **Pure CPU:** No GPU or AI accelerator is required.  
-  The system can achieve 30+ FPS on ARM 2 GHz-class platforms, depending on resolution and configuration.
-
-
-  **Robust:** Designed and validated for challenging scenarios, including strong backlight, nighttime driving, rain, fog, and low-contrast road conditions.
-
-
-  **Explainable:** Based on geometric structures and line-segment-level filtering (Binary Line Segment Filtering),
-  rather than black-box deep learning models.
-  The detection behavior is analyzable, debuggable, and predictable.
-
-
-  **Deterministic:** The computational pipeline and memory usage are fixed and well-bounded,
-  making the approach suitable for safety-critical embedded systems.
-
----
-
-## Implementation Notes
-
-The project is implemented in C-style C++(`struct + function`) to ensure clarity and deterministic behavior.
-Since OpenCV 4+ has removed the legacy C API (IplImage / cv),
-a C++ compiler (g++ / clang++) is required to link against the OpenCV C++ interface.
-The implementation targets on-board / embedded Linux environments and does not rely on GPU, CUDA, or deep learning frameworks.
-
----
-
-## Build
+Requires a C++17 compiler, CMake >=3.16 and OpenCV with core, imgproc, imgcodecs,
+highgui. Tested locally with GCC 13.3.0 and OpenCV C++ 4.6.0. The commenter used
+4.13.0; this package does not claim exact version-matched replication.
 
 ```bash
-mkdir -p build
-cd build
-cmake ..
-cmake --build . -j
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j2
+ctest --test-dir build --output-on-failure
+./build/regression .
+./build/legacy_probe
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-For embedded platforms, building in Release mode (e.g., with `-O3`) is strongly recommended to achieve optimal performance.
+Python helpers need numpy and opencv-python; Python's OpenCV version may differ
+from the C++ library and is recorded separately in local validation notes.
 
----
+## Audit a new run
 
-## Run (Image Folder)
+Use an actual calibrated homography. Do not use the identity synthetic homography
+for road images. Supply an empty output directory outside the input directory.
+The image loader reads only the immediate input directory, not nested folders.
+Image stems must be unique. RANSAC retains the upstream seed 12345.
 
 ```bash
-./blsf_lane --input_dir ../data_images --output_dir ../outputs/run --debug_dir ../outputs/debug
+python3 scripts/run_audit.py --binary build/blsf_lane \
+  --config configs/default.yaml --input_dir data/frames \
+  --homography calibration/homography.yml --output_dir outputs/with_blsf
+python3 scripts/run_audit.py --binary build/blsf_lane \
+  --config configs/ablation_no_blsf.yaml --input_dir data/frames \
+  --homography calibration/homography.yml --output_dir outputs/without_blsf
 ```
 
-### Homography / IPM Setup
+The paired configurations differ only in `blsf.enabled`. Both use the same LSD,
+length threshold, segment rasterizer, tracker and RANSAC. The off condition
+disables angular voting/gating and the low-evidence rejection together.
+This estimates the full BLSF-stage contribution, not the angle gate alone.
+A separate rejection-only ablation is needed to isolate that mechanism.
 
-During the first execution, the program opens a window on the first image and prompts the user to select four points to establish the IPM (Inverse Perspective Mapping):
+Each output includes BEV polynomial predictions, failures, debug masks, the
+exact configuration and homography, source/input/executable SHA-256 hashes,
+raw logs and manifest. A failed frame stays in predictions.csv.
+`pipeline_ms` includes debug image construction inside run_pipeline but excludes
+image reading and debug-file writing. It is not comparable to the paper's ARM
+timing without matching hardware and timing scope.
 
-1. Top-left
-2. Top-right
-3. Bottom-right
-4. Bottom-left
+## Angle contract
 
-* Press Enter to confirm
-* Press r to reselect the points
-* Press Esc to cancel
+Image x points right; y points down. The undirected segment angle is
+`wrap_[-90,90)(atan2(dx,-dy)*180/pi)`. Upward vertical and downward vertical both
+map to 0. Positive values lean right as y decreases. Endpoint reversal is invariant.
 
-The generated homography will be saved as:
+Closed bins preserve overlapping membership from Eq. (5); a segment may add its
+length to more than one score. The overlap therefore never enters a rejection
+denominator. A frame is low-confidence when every bin score is below the
+absolute threshold, `max(B0,B1,B2) < min_total_vote`, as stated in the paper.
+Because the selected band equals the winning bin, `max(B0,B1,B2)` is exactly
+the total segment length passed to the tracker (`retained_vote` in the CSV).
+There is no dominance-ratio gate: A0 and A2 together cover [-35,35], so
+`dom_ratio = max(B0,B1,B2) / sum_unique(length)` is always >= 0.5 and any
+threshold at or below 0.5 could never fire. It is reported for diagnosis only,
+and a legacy `min_dom_ratio` key makes the configuration invalid.
+Ties prefer straight, then left, then right. These are disclosed repair choices,
+not recovered historical settings.
 
-```
-output_dir/homography.yml
-```
+The overall envelope is fixed at |theta| <= 35 degrees in BEV pixel
+coordinates; any other `max_abs_angle` is rejected. The winning bin then sets
+the acceptance band exactly: left [-35,0], straight [-5,5], right [0,35].
+No delta expansion or near-zero exclusion is permitted in this candidate.
+LSD and BLSF use strict `length > T1`.
 
-For subsequent runs, the homography can be reused by running:
+## Feature contract
+
+Default tracker input is the 0/255 rasterized retained-segment mask S.
+Rejected original pixels outside S remain zero in the tracker input.
+Rasterization can add pixels, so S is not guaranteed to be a subset of B.
+Optional `binary_and_segments` returns B intersection S; it changes feature
+semantics and must be evaluated separately. Optional `binary` is a diagnostic
+control and cannot support a claim of binary-pixel removal by BLSF.
+Legacy hybrid keys are rejected rather than silently translated.
+
+## Diagnostic mask evaluation
 
 ```bash
-./blsf_lane --reuse_h
+python3 scripts/evaluate_masks.py --predictions masks/pred \
+  --ground_truth masks/gt --output diagnostic_scores.json
 ```
 
-This is recommended for on-board deployment, where interactive GUI operations are often undesirable or unavailable.
+Requires identical nonempty PNG filename sets, equal shapes, already aligned
+masks and values 0/255. It reports pooled pixel counts and micro metrics.
+It is NOT an official CULane/LLAMAS lane-instance evaluator and cannot fill
+published Table 7. The segment mask is an intermediate feature, not a lane
+prediction mask. Before evaluation, generate prediction masks from the fitted
+polynomials using a declared line width and coordinate transform.
 
----
+## Evidence
 
-## Citation
+- `evidence/upstream/`: unchanged original files, including original README.
+- `evidence/upstream_manifest.json`: exact upstream blob hashes.
+- `evidence/validation/`: observed local regression and smoke-run outputs.
 
-If you use this codebase or refer to our research in your work, please cite the following paper:
-
-```bibtex
-@article{tsai2025blsf,
-  title={Real-Time Deterministic Lane Detection on CPU-Only Embedded Systems via Binary Line Segment Filtering},
-  author={Tsai, Shang-En and Yang, Shih-Ming and Hsieh, Chia-Han},
-  journal={Electronics},
-  year={2025},
-  note={In Press}
-}
-```
-
----
-
+Preserve the original repository revision and publish a new correction commit
+after author review. Do not replace the original history or call this package
+the historical code that produced the reported results.

@@ -1,5 +1,6 @@
 #include "lsd.h"
 #include "utils.h"
+#include "geometry.h"
 
 namespace blsf {
 
@@ -15,10 +16,9 @@ void detect_segments_lsd(const cv::Mat& gray8, std::vector<Segment>& segs, float
     float x1=v[0], y1=v[1], x2=v[2], y2=v[3];
     float dx=x2-x1, dy=y2-y1;
     float len=std::sqrt(dx*dx + dy*dy);
-    if (len < min_len) continue;
-    float theta = rad2deg(std::atan2(dy, dx));
-    if (theta > 90.f) theta -= 180.f;
-    if (theta < -90.f) theta += 180.f;
+    if (!std::isfinite(len) || len <= min_len) continue;
+    float theta = vertical_angle_deg(dx, dy);
+    if (!std::isfinite(theta)) continue;
     segs.push_back({x1,y1,x2,y2,len,theta});
   }
 }

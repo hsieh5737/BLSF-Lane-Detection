@@ -15,8 +15,8 @@ struct Config {
   int mlt_k=11, mlt_t=15;
   float lsd_min_len=20.f;
   BLSFConfig blsf;
-  std::string feat_source="hybrid";
-  bool hybrid_or=true;
+  std::string feat_source="segments_mask";
+  bool blsf_enabled=true;
   int peaks_smooth=9, peaks_min=50;
   int n_windows=12, margin=60, minpix=40;
   int ransac_iters=200;

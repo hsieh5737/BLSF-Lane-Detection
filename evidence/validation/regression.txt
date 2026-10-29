@@ -1,0 +1,24 @@
+PASS angle_vertical_both_orders
+PASS angle_endpoint_invariance_sweep
+PASS horizontal_and_degenerate
+PASS vertical_overlap_and_straight_tie
+PASS strict_35_degree_envelope
+PASS straight_band_edges_with_support
+PASS left_and_right_band_selection
+PASS length_boundary_strict
+PASS insufficient_unique_evidence
+PASS invalid_and_empty_evidence
+PASS dominance_ratio_is_diagnostic_only
+PASS evidence_gate_on_retained_support
+PASS envelope_fixed_at_35
+PASS legacy_ratio_key_rejected
+PASS expansion_and_min_exclusion_rejected
+PASS mask_is_binary
+PASS feature_rejected_pixel_stays_removed
+DATA vertical_rectangles input=4 kept=4
+PASS synthetic_lsd_vertical
+PASS configuration_and_paired_ablation
+PASS pipeline_blank_rejects_and_clears
+DATA full_pipeline left_c=178 right_c=448
+PASS pipeline_synthetic_and_ablation
+21 regression cases passed; OpenCV 4.6.0
