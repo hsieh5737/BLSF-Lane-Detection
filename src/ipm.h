@@ -7,6 +7,9 @@ namespace blsf {
 struct IPM {
   int bev_w = 640;
   int bev_h = 480;
+  // Declared ground ROI aspect (lateral width / forward length); 0 = undeclared.
+  // Only used to report what the pixel-angle bands mean physically.
+  double roi_w_over_l = 0;
   cv::Mat H; // 3x3
   bool ready = false;
 };

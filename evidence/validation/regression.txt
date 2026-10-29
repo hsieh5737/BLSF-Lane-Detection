@@ -19,7 +19,11 @@ DATA vertical_rectangles input=4 kept=4
 PASS synthetic_lsd_vertical
 PASS configuration_and_paired_ablation
 PASS homography_size_must_match_config
+PASS paper_nominal_pair_and_isotropy
+PASS roi_aspect_validation
+DATA paper_nominal left_c=58.1689 right_c=163.169 retained=1115
+PASS pipeline_paper_nominal_225x300
 PASS pipeline_blank_rejects_and_clears
 DATA full_pipeline left_c=178 right_c=448
 PASS pipeline_synthetic_and_ablation
-22 regression cases passed; OpenCV 4.6.0
+25 regression cases passed; OpenCV 4.6.0

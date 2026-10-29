@@ -1,4 +1,5 @@
 #include "pipeline.h"
+#include <cmath>
 #include "preprocess.h"
 #include "mlt.h"
 #include "lsd.h"
@@ -13,6 +14,7 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
 
   fs["ipm"]["bev_width"] >> cfg.ipm.bev_w;
   fs["ipm"]["bev_height"] >> cfg.ipm.bev_h;
+  if (!fs["ipm"]["roi_w_over_l"].empty()) fs["ipm"]["roi_w_over_l"] >> cfg.ipm.roi_w_over_l;
 
   fs["gray"]["w_r"] >> cfg.w_r;
   fs["gray"]["w_g"] >> cfg.w_g;
@@ -57,6 +59,7 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
   fs.release();
   cfg.blsf.min_len = cfg.lsd_min_len;
   return valid_blsf_config(cfg.blsf) && cfg.ipm.bev_w > 0 && cfg.ipm.bev_h > 0 &&
+    std::isfinite(cfg.ipm.roi_w_over_l) && cfg.ipm.roi_w_over_l >= 0 &&
     cfg.mlt_k > 0 && cfg.n_windows > 0 && cfg.n_windows <= cfg.ipm.bev_h &&
     cfg.margin > 0 && cfg.minpix > 0 && cfg.peaks_smooth > 0 && cfg.peaks_min > 0 &&
     cfg.ransac_iters > 0 && cfg.ransac_thresh > 0 && cfg.ransac_min_inliers >= 3 &&

@@ -1,3 +1,4 @@
+geometry: BEV 640x480 px, ROI W/L=0.75, sx/sy=1.77778, envelope +/-35 px-deg = +/-21.4978 deg physical, straight +/-5 px-deg = +/-2.81739 deg physical
 blank status=no_peaks dom=-1 dom_ratio=0 peaks=(-1,-1)
 horizontal status=no_peaks dom=-1 dom_ratio=0 peaks=(-1,-1)
 vertical status=ok dom=-1 dom_ratio=0 peaks=(179,449)

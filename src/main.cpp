@@ -8,6 +8,7 @@
 #include "pipeline.h"
 #include "utils.h"
 #include "ipm.h"
+#include "geometry.h"
 
 using namespace blsf;
 
@@ -106,6 +107,18 @@ int main(int argc, char** argv) {
       return 1;
     }
     save_homography(H_path, cfg.ipm);
+  }
+
+  std::cout << "geometry: BEV " << cfg.ipm.bev_w << "x" << cfg.ipm.bev_h << " px";
+  if (cfg.ipm.roi_w_over_l > 0) {
+    const double r = bev_anisotropy(cfg.ipm.bev_w, cfg.ipm.bev_h, cfg.ipm.roi_w_over_l);
+    std::cout << ", ROI W/L=" << cfg.ipm.roi_w_over_l << ", sx/sy=" << r
+              << ", envelope +/-" << cfg.blsf.max_abs_angle << " px-deg = +/-"
+              << physical_angle_deg(cfg.blsf.max_abs_angle, r) << " deg physical"
+              << ", straight +/-" << cfg.blsf.a1_hi << " px-deg = +/-"
+              << physical_angle_deg(cfg.blsf.a1_hi, r) << " deg physical\n";
+  } else {
+    std::cout << ", ROI aspect not declared: pixel angles are not converted to headings\n";
   }
 
   std::ofstream predictions(output_dir+"/predictions.csv");

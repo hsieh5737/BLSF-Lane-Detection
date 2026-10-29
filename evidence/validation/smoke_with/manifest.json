@@ -6,20 +6,20 @@
     "--config",
     "/home/claude/upstream/configs/default.yaml",
     "--input_dir",
-    "/home/claude/runs3/input",
+    "/home/claude/runs6/input",
     "--homography",
-    "/home/claude/runs3/H.yml",
+    "/home/claude/runs6/H.yml",
     "--output_dir",
-    "/home/claude/runs3/smoke_with",
+    "/home/claude/runs6/smoke_with",
     "--debug_dir",
-    "/home/claude/runs3/smoke_with/debug"
+    "/home/claude/runs6/smoke_with/debug"
   ],
-  "started_utc": "2026-10-29T03:17:58.019384+00:00",
+  "started_utc": "2026-10-29T03:53:58.223820+00:00",
   "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
   "machine": "x86_64",
   "processor": "x86_64",
-  "binary_sha256": "952cd14d8b3234f3d8f42aed2bb2ce2b53140a18f5f2394848236cfcd22688d2",
-  "config_sha256": "c183932299bdea1e4bf02bd6cca5d0a98541bfd06cf18f96bc9a57b4cb4d3cd7",
+  "binary_sha256": "cee40dfbd9cc507ab6e4954caade96ae8bef67d8da397efc282d3390c1dc0a1d",
+  "config_sha256": "dd85e53b37be90ee70f1078effad351838e3d1df412ba8b257cf381039c4a4a4",
   "homography_sha256": "67d51a3c916c0fa8425dc222dfc2cf7feecf95836a6369023109f10e62a57ec3",
   "input_files": [
     {
@@ -50,7 +50,7 @@
     },
     {
       "name": "src/geometry.h",
-      "sha256": "bdd21ccae821d4469e096d351237393e7060a62491a2ac1604303f674170cbb6"
+      "sha256": "eddbc5392c4f63ee7d0b8314f8ff2a06b4be148719b8f3d083514886fb80714e"
     },
     {
       "name": "src/init_peaks.cpp",
@@ -62,11 +62,11 @@
     },
     {
       "name": "src/ipm.cpp",
-      "sha256": "302d988d748fa00beac62bbb704b540d1e419742ee3040a6a613e2bd451cba36"
+      "sha256": "b0a913e7e5ea5affd16dcccac6fce6a96720c600a82131a36c70f5feb5f3650b"
     },
     {
       "name": "src/ipm.h",
-      "sha256": "4298d5bd02f60fb045d7732775e90a2ed7661680d2acf9db847aedc83b66cdea"
+      "sha256": "7c4350cad8f32e6307b3c1cf14db64e3b425439b508fbd5775d8f01f450b5c55"
     },
     {
       "name": "src/lsd.cpp",
@@ -78,7 +78,7 @@
     },
     {
       "name": "src/main.cpp",
-      "sha256": "d2010173db17f8027f5522de1009b1752edbb4301db62211de9fb428a0db30f3"
+      "sha256": "c5563be42cd54a6eb8ce4ef3ab748282375e55381d94804e6aabd0c8e82362e2"
     },
     {
       "name": "src/mlt.cpp",
@@ -90,7 +90,7 @@
     },
     {
       "name": "src/pipeline.cpp",
-      "sha256": "76f5a7e442c074546f2bbfba4ac6dc0bc586be120c5e56bb3c70225a5a7f2739"
+      "sha256": "3447d15d9271f1441f4a5fce63bc32be16230ef8bee5542de275e22dd87c536a"
     },
     {
       "name": "src/pipeline.h",
@@ -138,15 +138,23 @@
     },
     {
       "name": "configs/ablation_no_blsf.yaml",
-      "sha256": "cf1dc7754d0ca0f2c39c1a39a2beee28d5d68caf9f9ea276ee3217957ed8ce82"
+      "sha256": "e20db04f9ffbbb25238668481582bab80ba2d0dcbb416bde0f173b01baa957d5"
     },
     {
       "name": "configs/default.yaml",
-      "sha256": "c183932299bdea1e4bf02bd6cca5d0a98541bfd06cf18f96bc9a57b4cb4d3cd7"
+      "sha256": "dd85e53b37be90ee70f1078effad351838e3d1df412ba8b257cf381039c4a4a4"
     },
     {
-      "name": "configs/paper_nominal_proposed.yaml",
-      "sha256": "ab22776c3b8393f3d625a444e751a0b01ff2ef8944bdfb9d3a967961d7f204d3"
+      "name": "configs/legacy_params_640x480.yaml",
+      "sha256": "f993ab8bfa6042526b563df66d185715fc5aaca405adfe3893a7f5a8caffa2d2"
+    },
+    {
+      "name": "configs/paper_nominal.yaml",
+      "sha256": "5d9b3b2baac8d322530ab4cbcbbcb1483f98cab80539b80a4d3222c6bcce4a1d"
+    },
+    {
+      "name": "configs/paper_nominal_ablation_no_blsf.yaml",
+      "sha256": "a6ddf6d25823c452a56a68ef4686a2e53eb2a17d6302ec9be647bd4ccfd025a4"
     },
     {
       "name": "scripts/evaluate_masks.py",
@@ -159,11 +167,11 @@
   ],
   "timing_scope": "run_pipeline including debug-image construction; excludes image read, debug-file write and output CSV; not an ARM benchmark",
   "exit_code": 0,
-  "ended_utc": "2026-10-29T03:17:58.464073+00:00",
+  "ended_utc": "2026-10-29T03:53:58.363690+00:00",
   "output_files": [
     {
       "name": "config_used.yaml",
-      "sha256": "c183932299bdea1e4bf02bd6cca5d0a98541bfd06cf18f96bc9a57b4cb4d3cd7"
+      "sha256": "dd85e53b37be90ee70f1078effad351838e3d1df412ba8b257cf381039c4a4a4"
     },
     {
       "name": "debug/blank/00_mosaic.png",
@@ -315,7 +323,7 @@
     },
     {
       "name": "predictions.csv",
-      "sha256": "780684046512f5e859823f6104bc31df957adbd28e06e589fb1914004e38d4c5"
+      "sha256": "620e7a9cd74424e380489cb97edc22a6a29f10dada0728e7fd5891a43716dc80"
     },
     {
       "name": "stderr.log",
@@ -323,7 +331,7 @@
     },
     {
       "name": "stdout.log",
-      "sha256": "a4cd373e3cf99a8264343b49276bc21cefd07c76b478b907d1764ba6633dfb5b"
+      "sha256": "f91144ebc9137ef6b713e0d757e052372bd3b4f11e981e48236b05067649187a"
     }
   ]
 }

@@ -53,6 +53,10 @@ python3 scripts/run_audit.py --binary build/blsf_lane \
   --homography calibration/homography.yml --output_dir outputs/without_blsf
 ```
 
+For the paper's nominal setting use `configs/paper_nominal.yaml` and
+`configs/paper_nominal_ablation_no_blsf.yaml` with a 225x300 homography of a
+3:4 ground rectangle.
+
 The paired configurations differ only in `blsf.enabled`. Both use the same LSD,
 length threshold, segment rasterizer, tracker and RANSAC. The off condition
 disables angular voting/gating and the low-evidence rejection together.
@@ -65,6 +69,37 @@ raw logs and manifest. A failed frame stays in predictions.csv.
 `pipeline_ms` includes debug image construction inside run_pipeline but excludes
 image reading and debug-file writing. It is not comparable to the paper's ARM
 timing without matching hardware and timing scope.
+
+## Configurations
+
+Every configuration declares a 3:4 ground ROI (`ipm.roi_w_over_l: 0.75`).
+The homography must map a ground rectangle with that width:length ratio to the
+configured BEV size; a homography stored with a different BEV size is rejected.
+The run prints sx/sy and the physical headings that the pixel-angle bands
+represent, using tan(theta_pixel) = (sx/sy) tan(theta_physical).
+
+| File | BEV | Use |
+|---|---|---|
+| `paper_nominal.yaml` / `paper_nominal_ablation_no_blsf.yaml` | 225x300, isotropic | paired evaluation at the paper's nominal setting |
+| `default.yaml` / `ablation_no_blsf.yaml` | 640x480, sx/sy=1.78 | current entry point until paper_nominal is validated |
+| `legacy_params_640x480.yaml` | 640x480, sx/sy=1.78 | released numeric values under corrected logic, for tracing differences |
+
+Paper values: Sm=9, Tg=15, T1=17. Other pixel-unit values in
+`paper_nominal.yaml` are proportional conversions from 640x480, fixed before
+any evaluation: kx = 225/640 for lateral sizes, ky = 300/480 for forward sizes,
+and pixel counts scaled by line thickness ratio x ky.
+
+| Key | 640x480 | 225x300 | Rule |
+|---|---|---|---|
+| blsf.min_total_vote | 300 | 187.5 | x ky |
+| blsf.draw_thickness | 2 | 1 | x kx, min 1 |
+| peaks.smooth_ksize | 9 | 3 | x kx, odd |
+| peaks.min_peak_value | 50 | 31 | x ky |
+| tracker.n_windows | 12 | 12 | count |
+| tracker.margin | 60 | 21 | x kx |
+| tracker.minpix | 40 | 13 | x (1/2) x ky |
+| ransac.inlier_thresh | 10 | 3.5 | x kx |
+| ransac.min_inliers | 80 | 25 | x (1/2) x ky |
 
 ## Angle contract
 

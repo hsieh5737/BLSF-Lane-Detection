@@ -3,6 +3,7 @@
 ipm:
   bev_width: 640
   bev_height: 480
+  roi_w_over_l: 0.75   # ground ROI 3:4 (width:length); sx/sy = 1.78 on this grid
 
 gray:
   w_r: 0.5

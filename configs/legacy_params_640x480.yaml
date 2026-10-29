@@ -1,8 +1,13 @@
 %YAML:1.0
 ---
+# Numeric parameters of the original public release (830a62f): BEV 640x480,
+# MLT 11, T1 20, under the CORRECTED logic. It does not reproduce the original
+# behaviour (hybrid input, 5-degree exclusion and 12-degree expansion are
+# rejected by this version). Kept only to trace historical differences.
 ipm:
   bev_width: 640
   bev_height: 480
+  roi_w_over_l: 0.75   # ground ROI 3:4 (width:length); sx/sy = 1.78 on this grid
 
 gray:
   w_r: 0.5
@@ -10,11 +15,11 @@ gray:
   w_b: 0.1
 
 mlt:
-  median_ksize: 9
+  median_ksize: 11
   offset_t: 15
 
 lsd:
-  min_len: 17.0
+  min_len: 20.0
   min_abs_angle: 0.0
   max_abs_angle: 35.0
 

@@ -84,6 +84,7 @@ bool load_homography_matching(const std::string& path, IPM& ipm) {
   }
   if (loaded.bev_w != ipm.bev_w || loaded.bev_h != ipm.bev_h) return false;
   if (loaded.H.rows != 3 || loaded.H.cols != 3) return false;
+  loaded.roi_w_over_l = ipm.roi_w_over_l; // declared by the configuration
   ipm = loaded;
   return true;
 }

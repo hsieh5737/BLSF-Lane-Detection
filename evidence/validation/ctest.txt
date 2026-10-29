@@ -1,10 +1,10 @@
 Internal ctest changing into directory: /home/claude/upstream/build
 Test project /home/claude/upstream/build
     Start 1: regression
-1/2 Test #1: regression .......................   Passed    0.15 sec
+1/2 Test #1: regression .......................   Passed    0.17 sec
     Start 2: legacy_probe
 2/2 Test #2: legacy_probe .....................   Passed    0.02 sec
 
 100% tests passed, 0 tests failed out of 2
 
-Total Test time (real) =   0.16 sec
+Total Test time (real) =   0.19 sec

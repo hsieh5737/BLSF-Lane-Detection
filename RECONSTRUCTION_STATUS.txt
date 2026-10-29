@@ -23,11 +23,16 @@ Default repair choices are NEW and explicit:
   strict length > T1; retained segment mask only, 0/255 rasterization;
   no binary fallback after rejection.
 
-Existing default MLT=11 and T1=20 are retained except for strict > boundary.
-configs/paper_nominal_proposed.yaml is an explicitly PROPOSED alternative using
-MLT=9 and T1=17 from the paper, at the same default 640x480 resolution.
-It is not an exact historical configuration. The paper describes 225x300 BEV;
-calibration/homography and physical support at that resolution remain missing.
+All configurations declare a 3:4 ground ROI (width:length).
+configs/default.yaml and legacy_params_640x480.yaml keep the released numeric
+values (640x480, MLT=11, T1=20) under the corrected logic; on a 3:4 ROI this
+grid is anisotropic (sx/sy=1.78), so +/-35 and +/-5 pixel degrees correspond to
+about +/-21.5 and +/-2.8 physical degrees.
+configs/paper_nominal.yaml uses the paper's Sm=9, Tg=15, T1=17 and 225x300 BEV,
+which is isotropic on a 3:4 ROI. Its remaining pixel-unit parameters are NEW
+proportional conversions, not recovered historical settings. The paper values
+Sm=9 and T1=17 are not proportional conversions of the released 11 and 20.
+A calibrated 3:4 homography at 225x300 is still required for real frames.
 
 The code still uses dynamic vectors, OpenCV allocation and a fixed-seed RANSAC.
 It does not establish static memory, WCET, functional safety certification,
