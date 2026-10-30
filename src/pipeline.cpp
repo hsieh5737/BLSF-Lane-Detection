@@ -38,6 +38,7 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
   fs["blsf"]["delta_theta"] >> cfg.blsf.delta_theta;
   fs["blsf"]["min_total_vote"] >> cfg.blsf.min_total_vote;
   fs["blsf"]["draw_thickness"] >> cfg.blsf.draw_thickness;
+  if (!fs["blsf"]["strips"].empty()) fs["blsf"]["strips"] >> cfg.blsf_strips;
   if (!fs["blsf"]["decision"].empty()) fs["blsf"]["decision"] >> cfg.blsf.decision;
 
   fs["features"]["source"] >> cfg.feat_source;
@@ -89,6 +90,7 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
     cfg.mlt_k > 0 && cfg.n_windows > 0 && cfg.n_windows <= cfg.ipm.bev_h &&
     cfg.margin > 0 && cfg.minpix > 0 && cfg.peaks_smooth > 0 && cfg.peaks_min > 0 &&
     (cfg.pair_mode == "none" || cfg.pair_mode == "check" || cfg.pair_mode == "joint") &&
+    cfg.blsf_strips >= 1 && cfg.blsf_strips <= 8 &&
     cfg.peak_opt.rows_fraction > 0 && cfg.peak_opt.rows_fraction <= 1 &&
     (cfg.peak_opt.select == "max" || cfg.peak_opt.select == "nearest_expected") &&
     cfg.peak_opt.expected_offset >= 0 && cfg.peak_opt.max_offset >= 0 && cfg.peak_opt.min_offset >= 0 &&
@@ -125,7 +127,28 @@ RunResult run_pipeline(const cv::Mat& bgr, Config& cfg, DebugPack& dbg) {
 
   // 5) BLSF
   std::vector<Segment> segf;
-  if (cfg.blsf_enabled) blsf_filter(segs, segf, cfg.blsf, rr.vote);
+  if (cfg.blsf_enabled) {
+    blsf_filter(segs, segf, cfg.blsf, rr.vote);  // whole-frame votes: confidence gate and diagnostics
+    if (cfg.blsf_strips > 1 && !rr.vote.low_confidence) {
+      // Per-strip band selection with the same bands and decision rule: on a curve
+      // the near strip can stay straight while the far strip selects a curve band.
+      // The confidence gate is the whole-frame one above; strips are not gated.
+      BLSFConfig sc = cfg.blsf; sc.min_total_vote = 1e-3f;
+      std::vector<std::vector<Segment>> by(cfg.blsf_strips);
+      int Hb = cfg.ipm.bev_h;
+      for (const auto& s : segs) {
+        double ym = 0.5 * (s.y1 + s.y2);
+        int k = (int)std::floor((Hb - 1 - ym) * cfg.blsf_strips / Hb);  // 0 = nearest strip
+        by[std::max(0, std::min(cfg.blsf_strips - 1, k))].push_back(s);
+      }
+      segf.clear();
+      for (auto& part : by) {
+        std::vector<Segment> kept; VoteInfo vi;
+        blsf_filter(part, kept, sc, vi);
+        segf.insert(segf.end(), kept.begin(), kept.end());
+      }
+    }
+  }
   else segf = segs; // paired ablation, retaining the same LSD length rule
   dbg.seg_after = draw_segments(bin_bgr, segf, cv::Scalar(0,255,0), 2);
 

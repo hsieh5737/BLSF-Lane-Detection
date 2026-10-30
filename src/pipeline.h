@@ -17,6 +17,7 @@ struct Config {
   BLSFConfig blsf;
   std::string feat_source="segments_mask";
   bool blsf_enabled=true;
+  int blsf_strips=1;   // v2 option: >1 selects the band separately in horizontal BEV strips (near..far)
   int peaks_smooth=9, peaks_min=50;
   PeakOptions peak_opt;
   bool require_both_peaks=true;  // v1: a frame without both initial peaks gives no output
