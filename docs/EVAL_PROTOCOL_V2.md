@@ -8,11 +8,14 @@ changes are listed under *Deviations*.
 ## 0. Position of this evaluation
 
 - v2 has not been run on the CULane test frames before registration.
-- v2 is not blind to the test set: its development started from the summary
-  of the registered v1 test run (about half of the frames ended as
-  `no_peaks` in both conditions), and its test homographies reuse the v1
-  calibration of the test camera folders (clicked rectangles and hood rows
-  from non-evaluated test lists). No other test-set information was used.
+- v2 is not blind to the test set. Two kinds of test-set information reached
+  it: (1) the summary of the registered v1 test run (about half of the
+  frames ended as `no_peaks` in both conditions), which started the
+  development; (2) the v1 calibration of the test camera folders (clicked
+  rectangles and hood rows, from non-evaluated test lists), which fixes the
+  v2 test homographies and supplied the focal length used for one
+  development calibration constant (`development/README.md`). No test frame
+  was run or scored with any development candidate.
 - All method choices were made on CULane train/val frames
   (`development/README.md`). The development confirmation set (`valh`) is
   interleaved with the tuning frames (same clips) and was used for several
@@ -35,8 +38,11 @@ frames, homographies and evaluation:
 
 Unchanged from the paper: Sm = 9, Tg = 15, T1 = 17, BEV 225 x 300, bands
 A0 = [-35, 0], A1 = [-5, 5], A2 = [0, 35] with length-weighted overlapping
-votes (Eq. 5), the +/-35 deg envelope, and the confidence gate
-(max_k B_k < 187.5 => low confidence, no tracker input).
+votes (Eq. 5), the +/-35 deg envelope, and the form of the confidence gate
+(low confidence when max_k B_k is below a threshold; no tracker input).
+Unchanged from v1 (not published in the paper): the gate threshold 187.5 px
+(the released code's 300 px at 640 x 480, scaled by 300 / 480) and the other
+proportionally converted values in `configs/paper_nominal.yaml`.
 
 Method modifications ([v2] in `configs/v2.yaml`); these change the published
 method and are reported as such, not as parameter settings:
@@ -59,9 +65,12 @@ method and are reported as such, not as parameter settings:
 5. ROI start 0.5 m beyond the hood edge (section 2).
 
 Fixed values with their development sensitivity (`development/README.md`):
-curvature bound flat within 0.006 F1 for radii 30-150 m (50 m chosen so that
-curves are not penalised); ROI start 0.25 / 0.5 / 1 / 2 m gave decreasing
-F1 (0.5 m chosen for a margin of about 14 image rows above the hood edge).
+the curvature bound is a nominal limit chosen from development sensitivity;
+relative to the chosen R >= 50 m, overall F1 changed by at most 0.006 for
+radii of 30-150 m. ROI start 0.25 / 0.5 / 1 / 2 m beyond the hood edge gave
+decreasing F1; 0.5 m was chosen because the hood rows were read by eye in v1
+and it leaves about 14 image rows between the ROI and the hood edge (about 7
+at 0.25 m).
 
 ## 2. Data and calibration
 
@@ -75,9 +84,12 @@ F1 (0.5 m chosen for a margin of about 14 image rows above the hood edge).
 
 ## 3. Evaluation
 
-- Primary metric: the v1 BEV ego-lane metric, unchanged
+- Primary metric: the v1 BEV ego-lane metric with unchanged matching rules
   (`scripts/blsf_eval/evaluate.py`; 10 px, IoU >= 0.5, GT lane >= 100 BEV
-  rows), in the v2 BEV.
+  rows), applied in the v2 BEV. Because the v2 ROI starts nearer the camera,
+  v1 and v2 scores cover different ground regions; comparisons between v1
+  and v2 are descriptive, and the hypotheses below compare conditions within
+  v2 only.
 - Secondary metric: image-space ego-lane IoU, CULane-style
   (`scripts/blsf_eval/evaluate_image.py`; 30 px on 1640 x 590, IoU >= 0.5,
   same ego lanes, inside the BEV ROI region). Not the official CULane
@@ -96,11 +108,18 @@ F1 (0.5 m chosen for a margin of about 14 image rows above the hood edge).
   correct, as produced by the v1 code. No interval is computed for F1 by
   the Wilson method.
 
-Hypotheses (pooled `all`, primary metric, clip-level intervals):
-H1 F1(with_blsf) > F1(without_blsf); H2 F1(with_blsf) > F1(with_blsf_eq6).
-A hypothesis is supported if the 95 % interval of the difference lies above
-0. Per-subset results are reported with their intervals and not tested
-separately (the dazzle and curve subsets have few clips). Development values
+Hypotheses (pooled `all`, primary metric, clip-level intervals), tested in a
+fixed sequence so that the probability of any false claim stays at 5 %:
+
+1. H1: F1(with_blsf) > F1(without_blsf). Supported if the 95 % interval of
+   the difference lies above 0.
+2. H2: F1(with_blsf) > F1(with_blsf_eq6). Judged only if H1 is supported,
+   with the same rule. If H1 is not supported, H2 is reported descriptively
+   and not claimed.
+
+Both differences and their intervals are reported in every case. Per-subset
+results and the secondary metric are reported with their intervals and are
+not tested (the dazzle and curve subsets have few clips). Development values
 for orientation only (`valh`, BEV F1): 0.412 / 0.369 / 0.349; clip-level
 intervals of the differences +0.028 to +0.057 (H1) and +0.045 to +0.080 (H2).
 

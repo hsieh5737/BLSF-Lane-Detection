@@ -3,10 +3,20 @@
 This folder records how the v2 method (`configs/v2.yaml`) was developed after
 the registered v1 evaluation (`results/culane_paper_nominal_20261030/`). It is
 kept so that every design decision, including the rejected ones, can be
-checked. No CULane test list was used in development. The only test-set
-information that influenced v2 is the status count of the registered v1 run
-(about half of all test frames ended as `no_peaks` in both conditions), which
-motivated the work on initialisation.
+checked. No CULane test list was used to run or score any development
+candidate.
+
+Test-set information that did reach the development (the same disclosure as
+section 0 of `docs/EVAL_PROTOCOL_V2.md`):
+
+1. The summary of the registered v1 test run, in particular the status counts
+   (about half of all test frames ended as `no_peaks` in both conditions),
+   which motivated the work on initialisation.
+2. The v1 calibration of the test camera folders (clicked rectangles and hood
+   rows, from non-evaluated test lists): it fixes the v2 test homographies
+   (`scripts/make_v2_homographies.py`), and the median focal length implied by
+   the three v1 test calibrations was used for one development calibration
+   constant (driver_161, below).
 
 ## Data
 
@@ -18,19 +28,28 @@ motivated the work on initialisation.
 - Development confirmation set: `valh` = the other 6,450 validation frames.
   It is interleaved with `val3` (same 54 video clips) and was scored for
   several candidates (v2, v3, v4, final), so it is not an independent
-  held-out set. The CULane test lists are the only data not used in
-  development (apart from the v1 status counts noted above).
+  held-out set. No test frame was run or scored with a development
+  candidate; the test-set information that did reach the development is
+  listed at the top of this file.
 
 ## Calibration of the development drivers (`calibration/`)
 
 The dev folders have no clicked calibration. A flat-road pinhole model was
 fitted on training frames: vanishing row and column from the annotated ego
 boundaries of straight-road frames (`scripts/vp_scan.py`), lateral scale from
-the boundary slopes (3.75 m lane), and the longitudinal constant
-k = f * h_cam from dash periods found by `scripts/scan_dash_period.py --list`
-(mode of the plausible values: driver_23 577, driver_182 613; driver_161 had
-too few dashes, 565 was taken from the median focal length implied by the
-three registered test calibrations). The ROI is the same 11.25 m x 15 m on
+the boundary slopes, and a longitudinal constant from dash periods. Model and
+units: an image row is v = v_h + k / Z for a ground point at distance Z (m),
+with k = f * h_cam in px * m (f = focal length in pixels, h_cam = camera
+height in m); a column is x = v_x + X * c * k / (W * Z), where c (no unit) is
+the difference of the two boundary slopes dx/dv and W = 3.75 m, so that
+h_cam = W / c. k was estimated from dash periods found by
+`scripts/scan_dash_period.py --list` (mode of the plausible values):
+driver_23 577 px * m (h_cam 1.33 m), driver_182 613 px * m (1.25 m).
+driver_161 had too few usable dashes; its k = 565 px * m comes from the
+median focal length of the three v1 test calibrations, f = 457 px (419, 457,
+495 px for driver_37, driver_100, driver_193), times h_cam = 3.75 / 3.019 =
+1.24 m (computed 567, entered as 565). Barrel distortion is ignored, so f is
+an effective pinhole value for the central road region. The ROI is the same 11.25 m x 15 m on
 225 x 300 px; `h2` starts 2 m beyond the hood edge (similar to the v1 test
 calibration), `h05` 0.5 m beyond it. Check on annotated straight frames:
 median lane width 3.31 / 3.58 / 3.59 m and median boundary angle about 1 deg,
@@ -118,13 +137,15 @@ the clip-level intervals below.)
    band's vote; the paper gates on max_k B_k. v2 now uses the paper's gate
    (`blsf.gate: "max"`). It changes 1-5 % of frames; BEV F1 val3 / tr
    0.413 / 0.372 (v4) -> 0.412 / 0.375.
-2. Curvature bound. Sensitivity (gate "max", BEV F1 val3 / tr; curved frames
-   val3 / tr): R >= 30 m 0.403 / 0.367 (0.157 / 0.209, v4 gate);
+2. Curvature bound (nominal limit on the fitted parabola; radius at
+   20 px/m). Sensitivity, BEV F1 val3 / tr (curved frames val3 / tr):
+   R >= 30 m 0.403 / 0.367 (0.157 / 0.209; measured with the v4 gate);
    R >= 50 m 0.409 / 0.373 (0.159 / 0.209); R >= 83 m 0.412 / 0.375
-   (0.152 / 0.196); R >= 150 m 0.413 / 0.379 (0.142 / 0.196). Overall flat
-   within 0.006; looser bounds help curved frames. Fixed at R >= 50 m
-   (`max_abs_a` 5e-4), a common urban minimum radius, so that the CULane
-   curve subset is not penalised.
+   (0.152 / 0.196); R >= 150 m 0.413 / 0.379 (0.142 / 0.196). Relative to the
+   chosen 50 m setting, overall F1 changes by at most 0.006 over 30-150 m,
+   and the looser bounds score higher on curved frames. The nominal limit
+   R >= 50 m (`max_abs_a` 5e-4) was chosen from this development
+   sensitivity.
 3. ROI start beyond the hood edge (BEV F1 val3 / tr, with / without BLSF,
    R >= 83 m): 0.25 m 0.424 / 0.375, 0.383 / 0.323; 0.5 m 0.412 / 0.375,
    0.373 / 0.319; 1 m 0.403 / 0.366, 0.358 / 0.317; 2 m 0.368 / 0.348,
