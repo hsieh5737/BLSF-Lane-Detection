@@ -14,7 +14,7 @@ bool valid_blsf_config(const BLSFConfig& c) {
     std::isfinite(c.min_len) && c.min_len >= 0 &&
     std::isfinite(c.min_total_vote) && c.min_total_vote > 0 &&
     c.draw_thickness >= 1 && c.draw_thickness <= 32 &&
-    (c.decision == "sum" || c.decision == "density");
+    (c.decision == "sum" || c.decision == "density") && (c.gate == "selected" || c.gate == "max");
 }
 
 void blsf_filter(const std::vector<Segment>& in, std::vector<Segment>& out,
@@ -62,7 +62,8 @@ void blsf_filter(const std::vector<Segment>& in, std::vector<Segment>& out,
   // threshold, i.e. max_k B_k < threshold. Because the selected band equals the
   // winning bin, this is also the total segment length handed to the tracker.
   // No dominance-ratio gate: with A0 U A2 = [-35,35], dom_ratio >= 0.5 always.
-  if (bmax < cfg.min_total_vote) return;
+  float gate_vote = cfg.gate == "max" ? std::max(info.B0, std::max(info.B1, info.B2)) : bmax;
+  if (gate_vote < cfg.min_total_vote) return;
   info.TL = info.dom == 0 ? cfg.a0_lo : (info.dom == 1 ? cfg.a1_lo : cfg.a2_lo);
   info.TU = info.dom == 0 ? cfg.a0_hi : (info.dom == 1 ? cfg.a1_hi : cfg.a2_hi);
   for (const auto& s : cand)

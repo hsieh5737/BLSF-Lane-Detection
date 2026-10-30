@@ -15,10 +15,11 @@ motivated the work on initialisation.
   (`lists/dev_train_sample.txt`); of these, the driver_161_90frame and
   driver_182_30frame frames (3,602) form subset `tr`.
 - Tuning subsets: `val3` = every 3rd validation frame (3,225) and `tr`.
-- Held-out confirmation: `valh` = the other 6,450 validation frames. It was
-  scored three times (for the v2, v3 and v4 candidates below), so it is a
-  confirmation set, not an untouched test set. The CULane test lists remain
-  the only data never used before the registered v2 run.
+- Development confirmation set: `valh` = the other 6,450 validation frames.
+  It is interleaved with `val3` (same 54 video clips) and was scored for
+  several candidates (v2, v3, v4, final), so it is not an independent
+  held-out set. The CULane test lists are the only data not used in
+  development (apart from the v1 status counts noted above).
 
 ## Calibration of the development drivers (`calibration/`)
 
@@ -83,22 +84,22 @@ offset (about 12 % of inferred sides correct).
 | peak pair width | 0.420 / 0.376 | removed |
 | pair check + joint refit | 0.415 / 0.374 (image metric +0.015 / +0.009) | removed |
 
-The simplified method is v4 = `configs/v2.yaml`.
+The simplified method is v4; the final `configs/v2.yaml` is v4 with the two
+revisions in the last section.
 
-## Final candidates on the held-out validation frames (`valh`, 6,450 frames)
+## Candidates on the development confirmation set (`valh`, 6,450 frames)
 
 | Method | BEV P / R / F1 | Image F1 |
 |---|---|---|
 | v1 with BLSF (`h2`) | 0.289 / 0.083 / 0.129 | 0.182 |
 | v1 without BLSF (`h2`) | 0.195 / 0.108 / 0.139 | 0.224 |
 | v3 with BLSF | 0.633 / 0.321 / 0.426 | 0.492 |
-| **v4 with BLSF (`configs/v2.yaml`)** | 0.564 / 0.331 / **0.417** | **0.495** |
+| v4 with BLSF | 0.564 / 0.331 / 0.417 | 0.495 |
 | v4 without BLSF | 0.454 / 0.320 / 0.375 | 0.460 |
 | v4 with published Eq. (6) | 0.550 / 0.259 / 0.352 | 0.411 |
 
-Frame bootstrap (1,000 resamples) of the paired difference for v3 on valh:
-with - without +0.040 to +0.054 (BEV), +0.031 to +0.046 (image);
-with - Eq. (6) +0.067 to +0.084 (BEV).
+(Frame-level bootstrap intervals reported earlier for v3 are superseded by
+the clip-level intervals below.)
 
 ## Checks after the choice of v4 (no further change made)
 
@@ -110,6 +111,54 @@ with - Eq. (6) +0.067 to +0.084 (BEV).
   without 0.140 / 0.195.
 - Dark frames (mean brightness < 50, 875 frames of `tr`): with 0.376
   (precision 0.66), without 0.360 (precision 0.52).
+
+## Revisions after co-author review (final `configs/v2.yaml`)
+
+1. Confidence gate. With the votes-per-degree rule, v4 gated on the selected
+   band's vote; the paper gates on max_k B_k. v2 now uses the paper's gate
+   (`blsf.gate: "max"`). It changes 1-5 % of frames; BEV F1 val3 / tr
+   0.413 / 0.372 (v4) -> 0.412 / 0.375.
+2. Curvature bound. Sensitivity (gate "max", BEV F1 val3 / tr; curved frames
+   val3 / tr): R >= 30 m 0.403 / 0.367 (0.157 / 0.209, v4 gate);
+   R >= 50 m 0.409 / 0.373 (0.159 / 0.209); R >= 83 m 0.412 / 0.375
+   (0.152 / 0.196); R >= 150 m 0.413 / 0.379 (0.142 / 0.196). Overall flat
+   within 0.006; looser bounds help curved frames. Fixed at R >= 50 m
+   (`max_abs_a` 5e-4), a common urban minimum radius, so that the CULane
+   curve subset is not penalised.
+3. ROI start beyond the hood edge (BEV F1 val3 / tr, with / without BLSF,
+   R >= 83 m): 0.25 m 0.424 / 0.375, 0.383 / 0.323; 0.5 m 0.412 / 0.375,
+   0.373 / 0.319; 1 m 0.403 / 0.366, 0.358 / 0.317; 2 m 0.368 / 0.348,
+   0.325 / 0.307. Nearer is better; 0.5 m is kept because the hood rows were
+   read by eye in v1 and 0.5 m leaves about 14 image rows between the ROI and
+   the hood edge, against about 7 rows at 0.25 m.
+4. Published rule vs votes per degree with everything else equal: v1
+   pipeline 0.120 / 0.134 (Eq. 6) vs 0.160 / 0.166 (per degree); v4 pipeline
+   0.342 / 0.316 (`v4sum`) vs 0.413 / 0.372; final pipeline 0.339 / 0.315 vs
+   0.409 / 0.373.
+
+Final configuration on the development confirmation set (`valh`):
+
+| Condition | BEV P / R / F1 | Image F1 |
+|---|---|---|
+| with BLSF (`f_with` = `configs/v2.yaml`) | 0.546 / 0.331 / 0.412 | 0.494 |
+| without BLSF (`f_without`) | 0.437 / 0.320 / 0.369 | 0.460 |
+| with BLSF, published Eq. (6) (`f_eq6`) | 0.535 / 0.259 / 0.349 | 0.410 |
+
+Paired bootstrap of the F1 difference, frame-level vs clip-level resampling
+(2,000 resamples; `scripts/clusterboot.py`):
+
+| Set (clips) | Comparison | Metric | dF1 | Frame CI | Clip CI |
+|---|---|---|---|---|---|
+| valh (54) | with - without | BEV | +0.042 | [+0.037, +0.048] | [+0.028, +0.057] |
+| valh (54) | with - without | image | +0.034 | [+0.028, +0.040] | [+0.019, +0.048] |
+| valh (54) | with - Eq. (6) | BEV | +0.063 | [+0.055, +0.070] | [+0.045, +0.080] |
+| val3 (54) | with - without | BEV | +0.041 | [+0.033, +0.050] | [+0.028, +0.054] |
+| tr (406) | with - without | BEV | +0.056 | [+0.048, +0.063] | [+0.044, +0.071] |
+| tr (406) | with - Eq. (6) | BEV | +0.058 | [+0.050, +0.066] | [+0.044, +0.073] |
+
+Clip intervals are 1.7-2.5 times wider than frame intervals (frames of a clip
+are correlated); protocol v2 therefore uses clip-level resampling for its
+decisions.
 
 ## Reproduction
 

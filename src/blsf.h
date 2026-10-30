@@ -19,6 +19,7 @@ struct BLSFConfig {
   float max_abs_angle=35;  // must stay 35: fixed overall envelope
   float min_len=20;        // strict >; synchronized with LSD by pipeline
   int draw_thickness=2;
+  std::string gate="selected"; // confidence gate on the selected band's B ("selected") or on max_k B_k ("max", paper Sec. 2.2); identical for decision=sum
   std::string decision="sum"; // "sum": Eq. (6) argmax B_k (v1); "density": argmax B_k / band width
 };
 

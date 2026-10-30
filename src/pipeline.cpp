@@ -39,6 +39,7 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
   fs["blsf"]["min_total_vote"] >> cfg.blsf.min_total_vote;
   fs["blsf"]["draw_thickness"] >> cfg.blsf.draw_thickness;
   if (!fs["blsf"]["strips"].empty()) fs["blsf"]["strips"] >> cfg.blsf_strips;
+  if (!fs["blsf"]["gate"].empty()) fs["blsf"]["gate"] >> cfg.blsf.gate;
   if (!fs["blsf"]["decision"].empty()) fs["blsf"]["decision"] >> cfg.blsf.decision;
 
   fs["features"]["source"] >> cfg.feat_source;

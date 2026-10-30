@@ -8,7 +8,7 @@ img=os.path.expanduser('~/mnt/BLSF/CULane_dev')
 for d,p in P.items():
     k=K[d]; vh,vx,c,hood=p['vh'],p['vx'],p['c'],p['hood']
     zh=k/(hood-vh)
-    for tag,dz in (('h2',2.0),('h05',0.5)):
+    for tag,dz in (('h2',2.0),('h1',1.0),('h05',0.5),('h025',0.25)):
         Z0=zh+dz
         def pt(X,Z): return (vx+X*c*k/(3.75*Z), vh+k/Z)
         pts=[pt(-1.875,Z0+15),pt(1.875,Z0+15),pt(1.875,Z0),pt(-1.875,Z0)]

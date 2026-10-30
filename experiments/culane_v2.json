@@ -20,6 +20,22 @@
     "without_blsf": "configs/v2_ablation_no_blsf.yaml",
     "with_blsf_eq6": "configs/v2_eq6.yaml"
   },
-  "eval": {"line_width_px": 10, "iou_threshold": 0.5, "min_gt_rows": 100, "bootstrap": 2000, "seed": 20261029},
-  "secondary_image_metric": {"img_w": 1640, "img_h": 590, "line_width_px": 30, "iou_threshold": 0.5}
+  "eval": {
+    "line_width_px": 10,
+    "iou_threshold": 0.5,
+    "min_gt_rows": 100,
+    "bootstrap": 2000,
+    "seed": 20261029
+  },
+  "secondary_image_metric": {
+    "img_w": 1640,
+    "img_h": 590,
+    "line_width_px": 30,
+    "iou_threshold": 0.5
+  },
+  "cluster_bootstrap": {
+    "unit": "clip",
+    "iters": 2000,
+    "seed": 20261029
+  }
 }

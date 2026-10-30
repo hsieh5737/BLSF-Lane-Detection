@@ -14,7 +14,7 @@ REPO = HERE.parent
 sys.path.insert(0, str(HERE))
 import cv2  # noqa: E402
 import numpy as np  # noqa: E402
-from blsf_eval import datasets, evaluate as ev, evaluate_image as ei, geometry as geo  # noqa: E402
+from blsf_eval import datasets, evaluate as ev, evaluate_image as ei, geometry as geo, stats  # noqa: E402
 
 
 def sha(p):
@@ -233,6 +233,7 @@ def main():
 
     summary = {"dry_run": bool(a.limit), "eval_params": ev.params_dict(params), "subsets": {}}
     names = list(subsets) + (["all"] if len(subsets) > 1 else [])
+    get_all = lambda c: [f for n in subsets for f in by[(c, n)]]
     for name in names:
         get = (lambda c: [f for n in subsets for f in by[(c, n)]]) if name == "all" else (lambda c: by[(c, name)])
         wb, wo = get("with_blsf"), get("without_blsf")
@@ -253,6 +254,27 @@ def main():
                 vs = ev.summarize(img(wb), params, paired=img(get(xc)))
                 xs["with_blsf_minus_this"] = {"delta_f1_ci": vs["delta_f1_ci"], "mcnemar": vs["mcnemar"]}
                 summary["secondary_image_metric"]["subsets"][name][xc] = xs
+    cb = spec.get("cluster_bootstrap")  # {"unit": "clip", "iters": N, "seed": S}; primary intervals in v2
+    if cb:
+        if cb.get("unit") != "clip":
+            raise SystemExit("cluster_bootstrap.unit must be 'clip'")
+        clip = lambda key: "/".join(key.split("/")[:2])  # <driver folder>/<video clip>
+        conds_all = list(cfg)
+        summary["cluster_bootstrap"] = {"unit": "clip", "subsets": {}}
+        for name in names:
+            fr = {c: (get_all(c) if name == "all" else by[(c, name)]) for c in conds_all}
+            cl = [clip(f["key"]) for f in fr["with_blsf"]]
+            for c in conds_all:
+                if [clip(f["key"]) for f in fr[c]] != cl:
+                    raise SystemExit("frame order differs between conditions")
+            res_b = stats.cluster_bootstrap({c: [[f["tp"], f["fp"], f["fn"]] for f in fr[c]] for c in conds_all},
+                                            cl, cb["iters"], cb["seed"])
+            entry = {"bev": res_b}
+            if ip:
+                entry["image"] = stats.cluster_bootstrap(
+                    {c: [[f["img_tp"], f["img_fp"], f["img_fn"]] for f in fr[c]] for c in conds_all},
+                    cl, cb["iters"], cb["seed"])
+            summary["cluster_bootstrap"]["subsets"][name] = entry
     ev.dump_json(res / "summary.json", summary)
 
     lines = ["| Subset | Condition | Frames | P | R | F1 [95% CI] | Low-conf. |", "|---|---|---|---|---|---|---|"]
@@ -287,6 +309,17 @@ def main():
                              f"{t['f1']:.3f} [{t['f1_ci'][0]:.3f}, {t['f1_ci'][1]:.3f}] |")
                 v = t["with_blsf_minus_this"]
                 lines.append(f"| {name} | delta F1 (with - {xc}) | | | [{v['delta_f1_ci'][0]:+.3f}, {v['delta_f1_ci'][1]:+.3f}] |")
+    if cb:
+        for metric in (["bev", "image"] if ip else ["bev"]):
+            lines += ["", f"Clip-cluster paired bootstrap ({metric} metric; primary intervals of protocol v2):", "",
+                      "| Subset | Clips | Condition | F1 | 95% CI | Difference | 95% CI |", "|---|---|---|---|---|---|---|"]
+            for name, e in summary["cluster_bootstrap"]["subsets"].items():
+                r = e[metric]
+                src = summary["subsets"][name] if metric == "bev" else summary["secondary_image_metric"]["subsets"][name]
+                for c, ci in r["conditions"].items():
+                    lines.append(f"| {name} | {r['clusters']} | {c} | {src[c]['f1']:.3f} | [{ci['f1_ci'][0]:.3f}, {ci['f1_ci'][1]:.3f}] | | |")
+                for dname, d in r["differences"].items():
+                    lines.append(f"| {name} | | | | | {dname} | [{d['delta_f1_ci'][0]:+.3f}, {d['delta_f1_ci'][1]:+.3f}] |")
     if a.limit:
         lines.insert(0, "**DRY RUN on a truncated list - not a result.**\n")
     (res / "summary.md").write_text("\n".join(lines) + "\n")

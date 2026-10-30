@@ -35,6 +35,7 @@ blsf:
   a2_hi: 35.0
   delta_theta: 0.0
   min_total_vote: 187.5    # 300 x ky (0.625)
+  gate: "max"              # confidence gate on max_k B_k (paper Sec. 2.2), whatever the decision rule
   draw_thickness: 1        # 2 x kx (0.35) -> 1
   decision: "density"      # [v2] winning band by votes per degree (B_k / band width), not raw B_k
 
@@ -60,7 +61,7 @@ ransac:
   inlier_thresh: 3.5       # 10 x kx
   min_inliers: 25          # 80 x (t'/t) x ky
   refit: 1                 # [v2] least-squares refit on the inliers
-  max_abs_a: 0.0003        # [v2] curvature bound, radius >= ~83 m at 20 px/m
+  max_abs_a: 0.0005        # [v2] curvature bound, radius >= 50 m at 20 px/m
   linear_span: 0.5         # [v2] straight-line refit when inliers span < 50% of the BEV height
 
 accept:
