@@ -7,8 +7,9 @@
 > tracker input). The original release is preserved unchanged at commit
 > [830a62f](https://github.com/hsieh5737/BLSF-Lane-Detection/tree/830a62f5eaf4bd1d74bc3be11451881cc3c9a0cf).
 > The authors do not rely on the originally reported results (297-frame set,
-> Tables 3, 6 and 7) and have replaced them with two pre-registered
-> evaluations on the public CULane test set (17,558 frames), reported in full:
+> Tables 3, 6 and 7) and have replaced them with two new evaluations on the
+> public CULane test set (17,558 frames), reported in full. The protocols were
+> fixed before their respective test runs and are archived in this repository:
 >
 > - **v1** (`docs/EVAL_PROTOCOL.md`, `results/culane_paper_nominal_20261030/`):
 >   the corrected code at the paper's nominal setting. Pooled ego-lane F1
@@ -115,7 +116,7 @@ and pixel counts scaled by line thickness ratio x ky. The one exception,
 | ransac.inlier_thresh | 10 | 3.5 | x kx |
 | ransac.min_inliers | 80 | 25 | x (1/2) x ky |
 
-## Pre-registered experiments
+## Evaluation protocols
 
 v2 (`docs/EVAL_PROTOCOL_V2.md`): homographies `calibration/v2/` from
 `scripts/make_v2_homographies.py`, specification `experiments/culane_v2.json`
