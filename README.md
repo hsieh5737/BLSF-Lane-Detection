@@ -1,23 +1,34 @@
 # BLSF corrected candidate
 
-> **Correction notice (2026-10-29).** A PubPeer comment on
-> *Electronics* 2026, 15, 351 (https://doi.org/10.3390/electronics15020351)
-> showed that the originally released code did not consistently implement the
-> method described in the article (angle convention, orientation gating,
-> low-evidence rejection and tracker input). The main branch now contains a
-> corrected implementation. It is not the program that produced the originally
-> reported results; reconciliation of those results is in progress, and this
-> implementation may still change during validation. The original release is
-> preserved unchanged at commit
+> **Correction notice.** A PubPeer comment on *Electronics* 2026, 15, 351
+> (https://doi.org/10.3390/electronics15020351) showed that the originally
+> released code did not consistently implement the method described in the
+> article (angle convention, orientation gating, low-evidence rejection and
+> tracker input). The original release is preserved unchanged at commit
 > [830a62f](https://github.com/hsieh5737/BLSF-Lane-Detection/tree/830a62f5eaf4bd1d74bc3be11451881cc3c9a0cf).
+> The authors do not rely on the originally reported results (297-frame set,
+> Tables 3, 6 and 7) and have replaced them with two pre-registered
+> evaluations on the public CULane test set (17,558 frames), reported in full:
+>
+> - **v1** (`docs/EVAL_PROTOCOL.md`, `results/culane_paper_nominal_20261030/`):
+>   the corrected code at the paper's nominal setting. Pooled ego-lane F1
+>   0.290 with and 0.292 without BLSF; the article's claims are not supported
+>   at this setting.
+> - **v2** (`docs/EVAL_PROTOCOL_V2.md`, `results/culane_v2_20261030/`): a
+>   corrected method developed afterwards on CULane train/val data only
+>   (`development/README.md`), including a width-normalised band decision
+>   that replaces Eq. (6). Pooled F1 0.559 with BLSF, 0.538 without BLSF and
+>   0.527 with the published Eq. (6); both differences are positive with
+>   clip-level 95 % intervals above zero. BLSF helps most at night and is
+>   worse than no BLSF on the curve subset.
+>
+> The form of the correction of the article is being settled with the
+> journal.
 
-This package repairs the released C++ snapshot
-`830a62f5eaf4bd1d74bc3be11451881cc3c9a0cf`.
-Read [RECONSTRUCTION_STATUS.txt](RECONSTRUCTION_STATUS.txt) before using it.
-
-It is a new corrected candidate, not a recovered experiment and not validation of
-the published Tables 6 and 7. Original data, annotations, evaluator and ARM logs
-remain necessary.
+The code below is the corrected implementation. It is not the program that
+produced the originally reported results; see
+[RECONSTRUCTION_STATUS.txt](RECONSTRUCTION_STATUS.txt). Original data,
+annotations, evaluator and ARM logs of the article remain unavailable.
 
 ## Build and verify
 
@@ -80,8 +91,9 @@ represent, using tan(theta_pixel) = (sx/sy) tan(theta_physical).
 
 | File | BEV | Use |
 |---|---|---|
-| `paper_nominal.yaml` / `paper_nominal_ablation_no_blsf.yaml` | 225x300, isotropic | paired evaluation at the paper's nominal setting |
-| `default.yaml` / `ablation_no_blsf.yaml` | 640x480, sx/sy=1.78 | current entry point until paper_nominal is validated |
+| `v2.yaml` / `v2_ablation_no_blsf.yaml` / `v2_eq6.yaml` | 225x300, isotropic | corrected method v2 and its registered controls (`docs/EVAL_PROTOCOL_V2.md`) |
+| `paper_nominal.yaml` / `paper_nominal_ablation_no_blsf.yaml` | 225x300, isotropic | paired evaluation at the paper's nominal setting (v1) |
+| `default.yaml` / `ablation_no_blsf.yaml` | 640x480, sx/sy=1.78 | released resolution under corrected logic |
 | `legacy_params_640x480.yaml` | 640x480, sx/sy=1.78 | released numeric values under corrected logic, for tracing differences |
 
 Paper values: Sm=9, Tg=15, T1=17. Other pixel-unit values in
@@ -103,9 +115,15 @@ and pixel counts scaled by line thickness ratio x ky. The one exception,
 | ransac.inlier_thresh | 10 | 3.5 | x kx |
 | ransac.min_inliers | 80 | 25 | x (1/2) x ky |
 
-## Pre-registered experiment
+## Pre-registered experiments
 
-`docs/EVAL_PROTOCOL.md` fixes data, calibration, parameters and metrics before
+v2 (`docs/EVAL_PROTOCOL_V2.md`): homographies `calibration/v2/` from
+`scripts/make_v2_homographies.py`, specification `experiments/culane_v2.json`
+(three conditions, secondary image-space metric, clip-level bootstrap), run as
+below with `--runs_only` / `--eval_only`. Development record and every
+development score: `development/`.
+
+v1: `docs/EVAL_PROTOCOL.md` fixes data, calibration, parameters and metrics before
 any run. Workflow:
 
 1. Calibrate one homography per CULane test folder from a frame of a
