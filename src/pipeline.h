@@ -27,6 +27,10 @@ struct Config {
   double ransac_max_abs_a=0.0;
   bool ransac_refit=false;
   double ransac_linear_span=0.0;  // fraction of BEV height; 0 = off
+  // v2 post-fit checks (defaults off = v1)
+  std::string pair_mode="none";    // "none" | "check" | "joint"
+  int pair_min_width=0, pair_max_width=0, pair_max_width_change=0;  // px
+  double accept_min_frac=0.0, accept_min_frac_single=0.0;           // inliers / tracked points
 };
 
 struct DebugPack {
@@ -43,6 +47,7 @@ struct RunResult {
   std::string status="ok";
   VoteInfo vote;
   Peaks peaks;
+  struct SideStats { int inliers=0, npts=0, span=0, hits=0; } left_st, right_st;  // diagnostics
 };
 
 RunResult run_pipeline(const cv::Mat& bgr, Config& cfg, DebugPack& dbg);

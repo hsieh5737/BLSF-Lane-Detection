@@ -128,10 +128,10 @@ int main(int argc, char** argv) {
   std::ofstream predictions(output_dir+"/predictions.csv");
   if(!predictions) {std::cerr << "Cannot open predictions.csv\n";return 1;}
   predictions << std::setprecision(17);
-  predictions << "image,status,ok,dom,B0,B1,B2,unique_vote,retained_vote,dom_ratio,TL,TU,left_valid,left_a,left_b,left_c,right_valid,right_a,right_b,right_c,pipeline_ms\n";
+  predictions << "image,status,ok,dom,B0,B1,B2,unique_vote,retained_vote,dom_ratio,TL,TU,left_valid,left_a,left_b,left_c,right_valid,right_a,right_b,right_c,pipeline_ms,left_inliers,left_npts,left_span,left_hits,right_inliers,right_npts,right_span,right_hits\n";
   for (auto& path : images) {
     cv::Mat bgr = cv::imread(path);
-    if (bgr.empty()) { predictions << csv(path) << ",unreadable_image,0,,,,,,,,,,0,,,,0,,,,\n"; continue; }
+    if (bgr.empty()) { predictions << csv(path) << ",unreadable_image,0,,,,,,,,,,0,,,,0,,,,,,,,,,,,\n"; continue; }
 
     DebugPack dbg;
     auto t0=std::chrono::steady_clock::now();
@@ -145,7 +145,10 @@ int main(int argc, char** argv) {
     predictions << "," << rr.right.valid << ",";
     if(rr.right.valid) predictions << rr.right.a << "," << rr.right.b << "," << rr.right.c;
     else predictions << ",,";
-    predictions << "," << ms << "\n";
+    predictions << "," << ms;
+    for (auto* st : {&rr.left_st, &rr.right_st})
+      predictions << "," << st->inliers << "," << st->npts << "," << st->span << "," << st->hits;
+    predictions << "\n";
 
     std::string name = basename_noext(path);
     if (!no_debug) {

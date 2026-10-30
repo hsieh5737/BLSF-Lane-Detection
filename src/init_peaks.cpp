@@ -26,7 +26,7 @@ Peaks find_initial_peaks(const cv::Mat& feat, int smooth_ksize, int min_peak_val
   hf.convertTo(hist, CV_32S);
 
   int mid=W/2;
-  auto in_range = [&](int x){ return opt.max_offset<=0 || std::abs(x-mid) <= opt.max_offset; };
+  auto in_range = [&](int x){ return (opt.max_offset<=0 || std::abs(x-mid) <= opt.max_offset) && std::abs(x-mid) >= opt.min_offset; };
   if (opt.select == "nearest_expected") {
     // local maxima (plateaus count once) at or above the threshold; the one whose
     // offset from the BEV centre is closest to the expected ego half width wins.

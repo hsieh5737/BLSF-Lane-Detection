@@ -17,6 +17,7 @@ struct PeakOptions {
   std::string select="max";        // "max" | "nearest_expected"
   int expected_offset=0;           // nearest_expected: expected |x - W/2| of the ego boundary (px)
   int max_offset=0;                // only peaks with |x - W/2| <= max_offset (0 = whole half)
+  int min_offset=0;                // only peaks with |x - W/2| >= min_offset
   int min_width=0, max_width=0;    // nearest_expected: admissible x_right - x_left (0 = no pair check)
 };
 

@@ -50,6 +50,11 @@ bool pick_homography_ui(const cv::Mat& frame, IPM& ipm) {
 
 cv::Mat warp_to_bev(const cv::Mat& frame, const IPM& ipm) {
   cv::Mat bev;
+  if (ipm.preblur > 1) {
+    cv::Mat sm; cv::GaussianBlur(frame, sm, cv::Size(ipm.preblur|1, ipm.preblur|1), 0);
+    cv::warpPerspective(sm, bev, ipm.H, cv::Size(ipm.bev_w, ipm.bev_h), cv::INTER_LINEAR);
+    return bev;
+  }
   cv::warpPerspective(frame, bev, ipm.H, cv::Size(ipm.bev_w, ipm.bev_h), cv::INTER_LINEAR);
   return bev;
 }
@@ -85,6 +90,7 @@ bool load_homography_matching(const std::string& path, IPM& ipm) {
   if (loaded.bev_w != ipm.bev_w || loaded.bev_h != ipm.bev_h) return false;
   if (loaded.H.rows != 3 || loaded.H.cols != 3) return false;
   loaded.roi_w_over_l = ipm.roi_w_over_l; // declared by the configuration
+  loaded.preblur = ipm.preblur;
   ipm = loaded;
   return true;
 }

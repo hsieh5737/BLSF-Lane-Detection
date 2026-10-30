@@ -10,6 +10,7 @@ struct IPM {
   // Declared ground ROI aspect (lateral width / forward length); 0 = undeclared.
   // Only used to report what the pixel-angle bands mean physically.
   double roi_w_over_l = 0;
+  int preblur=0;     // v2 option: Gaussian kernel (odd px) on the camera image before warping; 0 = off
   cv::Mat H; // 3x3
   bool ready = false;
 };

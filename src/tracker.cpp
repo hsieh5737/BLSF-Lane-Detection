@@ -36,6 +36,7 @@ TrackResult sliding_window_track(const cv::Mat& feat, const Peaks& peaks, int n_
       if ((int)ptsW.size() >= minpix) {
         int sumx=0;
         for (auto& p: ptsW){ sumx+=p.x; tr.pts_left.push_back(p); }
+        tr.hits_left++;
         xL = sumx/(int)ptsW.size();
       }
       tr.windows_left.push_back(winL);
@@ -47,6 +48,7 @@ TrackResult sliding_window_track(const cv::Mat& feat, const Peaks& peaks, int n_
       if ((int)ptsW.size() >= minpix) {
         int sumx=0;
         for (auto& p: ptsW){ sumx+=p.x; tr.pts_right.push_back(p); }
+        tr.hits_right++;
         xR = sumx/(int)ptsW.size();
       }
       tr.windows_right.push_back(winR);

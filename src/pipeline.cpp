@@ -1,5 +1,6 @@
 #include "pipeline.h"
 #include <cmath>
+#include <algorithm>
 #include "preprocess.h"
 #include "mlt.h"
 #include "lsd.h"
@@ -14,6 +15,7 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
 
   fs["ipm"]["bev_width"] >> cfg.ipm.bev_w;
   fs["ipm"]["bev_height"] >> cfg.ipm.bev_h;
+  if (!fs["ipm"]["preblur"].empty()) fs["ipm"]["preblur"] >> cfg.ipm.preblur;
   if (!fs["ipm"]["roi_w_over_l"].empty()) fs["ipm"]["roi_w_over_l"] >> cfg.ipm.roi_w_over_l;
 
   fs["gray"]["w_r"] >> cfg.w_r;
@@ -64,8 +66,19 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
   fs["ransac"]["inlier_thresh"] >> cfg.ransac_thresh;
   fs["ransac"]["min_inliers"] >> cfg.ransac_min_inliers;
   if (!fs["ransac"]["max_abs_a"].empty()) fs["ransac"]["max_abs_a"] >> cfg.ransac_max_abs_a;
+  if (!fs["pair"].empty()) {
+    if (!fs["pair"]["mode"].empty()) fs["pair"]["mode"] >> cfg.pair_mode;
+    if (!fs["pair"]["min_width"].empty()) fs["pair"]["min_width"] >> cfg.pair_min_width;
+    if (!fs["pair"]["max_width"].empty()) fs["pair"]["max_width"] >> cfg.pair_max_width;
+    if (!fs["pair"]["max_width_change"].empty()) fs["pair"]["max_width_change"] >> cfg.pair_max_width_change;
+  }
+  if (!fs["accept"].empty()) {
+    if (!fs["accept"]["min_inlier_frac"].empty()) fs["accept"]["min_inlier_frac"] >> cfg.accept_min_frac;
+    if (!fs["accept"]["min_inlier_frac_single"].empty()) fs["accept"]["min_inlier_frac_single"] >> cfg.accept_min_frac_single;
+  }
   if (!fs["ransac"]["linear_span"].empty()) fs["ransac"]["linear_span"] >> cfg.ransac_linear_span;
   if (!fs["ransac"]["refit"].empty()) { int rf=0; fs["ransac"]["refit"] >> rf; cfg.ransac_refit = rf != 0; }
+  if (!fs["peaks"]["min_offset"].empty()) fs["peaks"]["min_offset"] >> cfg.peak_opt.min_offset;
   if (!fs["peaks"]["min_width"].empty()) fs["peaks"]["min_width"] >> cfg.peak_opt.min_width;
   if (!fs["peaks"]["max_width"].empty()) fs["peaks"]["max_width"] >> cfg.peak_opt.max_width;
 
@@ -75,9 +88,10 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
     std::isfinite(cfg.ipm.roi_w_over_l) && cfg.ipm.roi_w_over_l >= 0 &&
     cfg.mlt_k > 0 && cfg.n_windows > 0 && cfg.n_windows <= cfg.ipm.bev_h &&
     cfg.margin > 0 && cfg.minpix > 0 && cfg.peaks_smooth > 0 && cfg.peaks_min > 0 &&
+    (cfg.pair_mode == "none" || cfg.pair_mode == "check" || cfg.pair_mode == "joint") &&
     cfg.peak_opt.rows_fraction > 0 && cfg.peak_opt.rows_fraction <= 1 &&
     (cfg.peak_opt.select == "max" || cfg.peak_opt.select == "nearest_expected") &&
-    cfg.peak_opt.expected_offset >= 0 && cfg.peak_opt.max_offset >= 0 &&
+    cfg.peak_opt.expected_offset >= 0 && cfg.peak_opt.max_offset >= 0 && cfg.peak_opt.min_offset >= 0 &&
     cfg.ransac_iters > 0 && cfg.ransac_thresh > 0 && cfg.ransac_min_inliers >= 3 &&
     (cfg.feat_source == "segments_mask" || cfg.feat_source == "binary_and_segments" || cfg.feat_source == "binary");
   } catch (const cv::Exception&) {
@@ -154,6 +168,54 @@ RunResult run_pipeline(const cv::Mat& bgr, Config& cfg, DebugPack& dbg) {
                                          (int)std::lround(cfg.ransac_linear_span * cfg.ipm.bev_h));
   rr.left = left_fit.poly;
   rr.right = right_fit.poly;
+  auto stats = [](const RansacResult& f, const std::vector<cv::Point>& pts, int hits) {
+    RunResult::SideStats st; st.inliers=f.inliers; st.npts=(int)pts.size(); st.hits=hits;
+    int lo=1<<30, hi=-1;
+    for (size_t i=0;i<f.inlier_mask.size();++i) if (f.inlier_mask[i]) { lo=std::min(lo,pts[i].y); hi=std::max(hi,pts[i].y); }
+    st.span = hi>=0 ? hi-lo : 0;
+    return st;
+  };
+  rr.left_st = stats(left_fit, tr.pts_left, tr.hits_left);
+  rr.right_st = stats(right_fit, tr.pts_right, tr.hits_right);
+
+  // 10) v2: pair consistency in the metric BEV (parallel boundaries, plausible width)
+  auto frac = [](const RunResult::SideStats& st){ return st.npts>0 ? (double)st.inliers/st.npts : 0.0; };
+  if (cfg.pair_mode != "none" && rr.left.valid && rr.right.valid) {
+    double H=cfg.ipm.bev_h-1;
+    double wb=eval_poly_x(rr.right,H)-eval_poly_x(rr.left,H), wt=eval_poly_x(rr.right,0)-eval_poly_x(rr.left,0);
+    bool consistent = wb>=cfg.pair_min_width && wb<=cfg.pair_max_width && wt>=cfg.pair_min_width && wt<=cfg.pair_max_width &&
+                      std::abs(wt-wb) <= cfg.pair_max_width_change;
+    if (!consistent) {
+      if (frac(rr.left_st) >= frac(rr.right_st)) rr.right.valid=false; else rr.left.valid=false;
+    } else if (cfg.pair_mode == "joint") {
+      // shared a, b; separate offsets: x = a y^2 + b y + c_side
+      std::vector<std::pair<cv::Point,int>> P;
+      for (size_t i=0;i<left_fit.inlier_mask.size();++i) if (left_fit.inlier_mask[i]) P.push_back({tr.pts_left[i],0});
+      for (size_t i=0;i<right_fit.inlier_mask.size();++i) if (right_fit.inlier_mask[i]) P.push_back({tr.pts_right[i],1});
+      bool linear = rr.left.a==0 && rr.right.a==0;
+      int nc = linear ? 3 : 4;
+      cv::Mat A((int)P.size(), nc, CV_64F, cv::Scalar(0)), X((int)P.size(), 1, CV_64F);
+      for (int r=0;r<(int)P.size();++r) {
+        double y=P[r].first.y; int c=0;
+        if (!linear) A.at<double>(r,c++)=y*y;
+        A.at<double>(r,c++)=y; A.at<double>(r,c+P[r].second)=1; X.at<double>(r,0)=P[r].first.x;
+      }
+      cv::Mat sol;
+      if ((int)P.size()>=nc && cv::solve(A, X, sol, cv::DECOMP_SVD)) {
+        double a = linear ? 0 : sol.at<double>(0,0), b = sol.at<double>(linear?0:1,0);
+        if (!(cfg.ransac_max_abs_a>0 && std::abs(a)>cfg.ransac_max_abs_a)) {
+          rr.left.a=a; rr.left.b=b; rr.left.c=sol.at<double>(nc-2,0);
+          rr.right.a=a; rr.right.b=b; rr.right.c=sol.at<double>(nc-1,0);
+        }
+      }
+    }
+  }
+  // 11) v2: per-side acceptance by inlier fraction (stricter for a side without partner)
+  if (cfg.accept_min_frac>0 || cfg.accept_min_frac_single>0) {
+    bool lv=rr.left.valid, rv=rr.right.valid;
+    if (lv && frac(rr.left_st) < (rv ? cfg.accept_min_frac : cfg.accept_min_frac_single)) rr.left.valid=false;
+    if (rv && frac(rr.right_st) < (lv ? cfg.accept_min_frac : cfg.accept_min_frac_single)) rr.right.valid=false;
+  }
 
   rr.ok = rr.left.valid && rr.right.valid;
   if (rr.ok) rr.status = "ok";
