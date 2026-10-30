@@ -1,0 +1,109 @@
+{
+  "schema": "blsf-experiment-v1",
+  "spec": {
+    "_comment": "Template. Copy to culane_paper_nominal.local.json, set root to your ASCII-only CULane path, add calibration frames to exclude only if they come from an evaluated list (they should not).",
+    "name": "culane_paper_nominal",
+    "dataset": "culane",
+    "root": "/home/claude/eval/data",
+    "subsets": {
+      "dazzle": "list/test_split/test2_hlight.txt",
+      "night": "list/test_split/test8_night.txt",
+      "curve": "list/test_split/test6_curve.txt",
+      "normal": "list/test_split/test0_normal.txt"
+    },
+    "exclude": [],
+    "homographies": {
+      "driver_37_30frame": "calibration/culane_driver_37_30frame.yml",
+      "driver_100_30frame": "calibration/culane_driver_100_30frame.yml",
+      "driver_193_90frame": "calibration/culane_driver_193_90frame.yml"
+    },
+    "conditions": {
+      "with_blsf": "configs/paper_nominal.yaml",
+      "without_blsf": "configs/paper_nominal_ablation_no_blsf.yaml"
+    },
+    "eval": {
+      "line_width_px": 10,
+      "iou_threshold": 0.5,
+      "min_gt_rows": 100,
+      "bootstrap": 2000,
+      "seed": 20261029
+    }
+  },
+  "spec_sha256": "f4880e179abe87f7e37b62997bdf1ec6fd7bf79ac69aaa580be8c66122a10c02",
+  "dry_run": false,
+  "limit": 0,
+  "repository": {
+    "commit": "7202925fcc9c544f51156dc2d3f7e62a2855ab3b",
+    "dirty": false
+  },
+  "started_utc": "2026-10-30T01:56:39.332640+00:00",
+  "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+  "python": "3.10.13 | packaged by conda-forge | (main, Oct 26 2023, 18:07:37) [GCC 12.3.0]",
+  "opencv_python": "4.6.0",
+  "binary_sha256": null,
+  "mode": "eval_only",
+  "configs": {
+    "with_blsf": {
+      "path": "/home/claude/eval/repo/configs/paper_nominal.yaml",
+      "sha256": "e2ae88df4825dc8a84cad5b7f8795a9d62ed2e0c3c68c9462d4d05638a27b4ed"
+    },
+    "without_blsf": {
+      "path": "/home/claude/eval/repo/configs/paper_nominal_ablation_no_blsf.yaml",
+      "sha256": "185d72618a4008f6991f772bef9439d27a8efcdfc88739136ef2166314cfc215"
+    }
+  },
+  "homographies": {
+    "driver_37_30frame": {
+      "path": "/home/claude/eval/repo/calibration/culane_driver_37_30frame.yml",
+      "sha256": "9662b183d858da4e3121bc0d0b5d59cc1e7617baa84688280a6aeb1813c370dc"
+    },
+    "driver_100_30frame": {
+      "path": "/home/claude/eval/repo/calibration/culane_driver_100_30frame.yml",
+      "sha256": "ec7cc4611f18b12c78ef39ac4be4df353805fa513fdfb58cf46e31e3a4070616"
+    },
+    "driver_193_90frame": {
+      "path": "/home/claude/eval/repo/calibration/culane_driver_193_90frame.yml",
+      "sha256": "60682f419448f28d53ae408ddcb6c5c6c1264fd7d892bee7a0b124bf1d830738"
+    }
+  },
+  "lists": {
+    "dazzle": {
+      "path": "/home/claude/eval/data/list/test_split/test2_hlight.txt",
+      "sha256": "8068fa4c598ae2fc20373c0d872dfa95191e3bea37d81dc7f1b3db0a925cc3d0",
+      "frames": 486
+    },
+    "night": {
+      "path": "/home/claude/eval/data/list/test_split/test8_night.txt",
+      "sha256": "dab0aec3c16ac6cf93ed1d51b39d3bb41137ab333251b89c75cf297b3035ed32",
+      "frames": 7029
+    },
+    "curve": {
+      "path": "/home/claude/eval/data/list/test_split/test6_curve.txt",
+      "sha256": "801b507e5201cb8c891cb150e902dbb046e496d84aa9bcc2a5aa5925d1e5843c",
+      "frames": 422
+    },
+    "normal": {
+      "path": "/home/claude/eval/data/list/test_split/test0_normal.txt",
+      "sha256": "e161e93ebc05a9fc3fb78e3f4eaf388d3ed6cc5fb9fb927ded853b659e09343c",
+      "frames": 9621
+    }
+  },
+  "eval_params": {
+    "line_width_px": 10,
+    "iou_threshold": 0.5,
+    "min_gt_rows": 100,
+    "bootstrap": 2000,
+    "seed": 20261029
+  },
+  "bev": [
+    225,
+    300
+  ],
+  "max_frames_per_run": 0,
+  "ended_utc": "2026-10-30T01:57:41.328372+00:00",
+  "result_files": {
+    "per_frame.csv": "a5e4983b9e75ba38ff0582079fc990be5bce2cc023a773803eab768412b1a3d2",
+    "summary.json": "57685977efc600cc0031319c512248343056f9562e9f637f8c8d60743f506dd3",
+    "summary.md": "1b024226de5c04c2b189c90315a53e85359877c97bad52e9c78971c0045ed5ef"
+  }
+}
