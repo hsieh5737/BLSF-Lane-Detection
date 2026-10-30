@@ -13,7 +13,8 @@ bool valid_blsf_config(const BLSFConfig& c) {
     c.min_abs_angle == 0 && c.max_abs_angle == kMaxAbsAngleDeg &&
     std::isfinite(c.min_len) && c.min_len >= 0 &&
     std::isfinite(c.min_total_vote) && c.min_total_vote > 0 &&
-    c.draw_thickness >= 1 && c.draw_thickness <= 32;
+    c.draw_thickness >= 1 && c.draw_thickness <= 32 &&
+    (c.decision == "sum" || c.decision == "density");
 }
 
 void blsf_filter(const std::vector<Segment>& in, std::vector<Segment>& out,
@@ -43,8 +44,18 @@ void blsf_filter(const std::vector<Segment>& in, std::vector<Segment>& out,
   // Overlapping membership follows Eq. (5). Tie order: straight, left, right.
   info.dom = 1;
   float bmax = info.B1;
-  if (info.B0 > bmax) { bmax = info.B0; info.dom = 0; }
-  if (info.B2 > bmax) { bmax = info.B2; info.dom = 2; }
+  if (cfg.decision == "density") {
+    // Votes per degree: segments spread uniformly over the envelope (texture,
+    // noise) favour no band, so the 10-degree straight band is not outvoted
+    // by the 35-degree curve bands that also contain half of the straight lines.
+    double d0 = info.B0 / (cfg.a0_hi - cfg.a0_lo), d1 = info.B1 / (cfg.a1_hi - cfg.a1_lo),
+           d2 = info.B2 / (cfg.a2_hi - cfg.a2_lo), dm = d1;
+    if (d0 > dm) { dm = d0; info.dom = 0; bmax = info.B0; }
+    if (d2 > dm) { dm = d2; info.dom = 2; bmax = info.B2; }
+  } else {
+    if (info.B0 > bmax) { bmax = info.B0; info.dom = 0; }
+    if (info.B2 > bmax) { bmax = info.B2; info.dom = 2; }
+  }
   info.retained_vote = bmax;
   info.dom_ratio = info.unique_vote > 0 ? bmax / info.unique_vote : 0;
   // Paper Sec. 2.2: low-confidence when all bin scores are below the absolute

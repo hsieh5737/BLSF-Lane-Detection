@@ -36,6 +36,7 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
   fs["blsf"]["delta_theta"] >> cfg.blsf.delta_theta;
   fs["blsf"]["min_total_vote"] >> cfg.blsf.min_total_vote;
   fs["blsf"]["draw_thickness"] >> cfg.blsf.draw_thickness;
+  if (!fs["blsf"]["decision"].empty()) fs["blsf"]["decision"] >> cfg.blsf.decision;
 
   fs["features"]["source"] >> cfg.feat_source;
   // Legacy keys are rejected, never silently reinterpreted.
@@ -47,6 +48,13 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
 
   fs["peaks"]["smooth_ksize"] >> cfg.peaks_smooth;
   fs["peaks"]["min_peak_value"] >> cfg.peaks_min;
+  if (!fs["peaks"]["rows_fraction"].empty()) fs["peaks"]["rows_fraction"] >> cfg.peak_opt.rows_fraction;
+  if (!fs["peaks"]["select"].empty()) fs["peaks"]["select"] >> cfg.peak_opt.select;
+  if (!fs["peaks"]["expected_offset"].empty()) fs["peaks"]["expected_offset"] >> cfg.peak_opt.expected_offset;
+  if (!fs["peaks"]["max_offset"].empty()) fs["peaks"]["max_offset"] >> cfg.peak_opt.max_offset;
+  if (!fs["tracker"]["require_both_peaks"].empty()) {
+    int rb=1; fs["tracker"]["require_both_peaks"] >> rb; cfg.require_both_peaks = rb != 0;
+  }
 
   fs["tracker"]["n_windows"] >> cfg.n_windows;
   fs["tracker"]["margin"] >> cfg.margin;
@@ -55,6 +63,11 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
   fs["ransac"]["iters"] >> cfg.ransac_iters;
   fs["ransac"]["inlier_thresh"] >> cfg.ransac_thresh;
   fs["ransac"]["min_inliers"] >> cfg.ransac_min_inliers;
+  if (!fs["ransac"]["max_abs_a"].empty()) fs["ransac"]["max_abs_a"] >> cfg.ransac_max_abs_a;
+  if (!fs["ransac"]["linear_span"].empty()) fs["ransac"]["linear_span"] >> cfg.ransac_linear_span;
+  if (!fs["ransac"]["refit"].empty()) { int rf=0; fs["ransac"]["refit"] >> rf; cfg.ransac_refit = rf != 0; }
+  if (!fs["peaks"]["min_width"].empty()) fs["peaks"]["min_width"] >> cfg.peak_opt.min_width;
+  if (!fs["peaks"]["max_width"].empty()) fs["peaks"]["max_width"] >> cfg.peak_opt.max_width;
 
   fs.release();
   cfg.blsf.min_len = cfg.lsd_min_len;
@@ -62,6 +75,9 @@ bool load_config_yaml(const std::string& path, Config& cfg) {
     std::isfinite(cfg.ipm.roi_w_over_l) && cfg.ipm.roi_w_over_l >= 0 &&
     cfg.mlt_k > 0 && cfg.n_windows > 0 && cfg.n_windows <= cfg.ipm.bev_h &&
     cfg.margin > 0 && cfg.minpix > 0 && cfg.peaks_smooth > 0 && cfg.peaks_min > 0 &&
+    cfg.peak_opt.rows_fraction > 0 && cfg.peak_opt.rows_fraction <= 1 &&
+    (cfg.peak_opt.select == "max" || cfg.peak_opt.select == "nearest_expected") &&
+    cfg.peak_opt.expected_offset >= 0 && cfg.peak_opt.max_offset >= 0 &&
     cfg.ransac_iters > 0 && cfg.ransac_thresh > 0 && cfg.ransac_min_inliers >= 3 &&
     (cfg.feat_source == "segments_mask" || cfg.feat_source == "binary_and_segments" || cfg.feat_source == "binary");
   } catch (const cv::Exception&) {
@@ -115,8 +131,10 @@ RunResult run_pipeline(const cv::Mat& bgr, Config& cfg, DebugPack& dbg) {
   cv::cvtColor(dbg.feat_used, dbg.windows_img, cv::COLOR_GRAY2BGR);
 
   // 7) peaks
-  rr.peaks = find_initial_peaks(dbg.feat_used, cfg.peaks_smooth, cfg.peaks_min);
-  if (rr.peaks.x_left < 0 || rr.peaks.x_right < 0) {
+  rr.peaks = find_initial_peaks(dbg.feat_used, cfg.peaks_smooth, cfg.peaks_min, cfg.peak_opt);
+  bool missing = cfg.require_both_peaks ? (rr.peaks.x_left < 0 || rr.peaks.x_right < 0)
+                                        : (rr.peaks.x_left < 0 && rr.peaks.x_right < 0);
+  if (missing) {
     rr.status = "no_peaks";
     dbg.overlay = dbg.bev_bgr.clone();
     return rr;
@@ -128,13 +146,19 @@ RunResult run_pipeline(const cv::Mat& bgr, Config& cfg, DebugPack& dbg) {
   dbg.windows_img = draw_windows(feat_bgr, tr);
 
   // 9) RANSAC
-  auto left_fit  = fit_parabola_ransac(tr.pts_left,  cfg.ransac_iters, cfg.ransac_thresh, cfg.ransac_min_inliers);
-  auto right_fit = fit_parabola_ransac(tr.pts_right, cfg.ransac_iters, cfg.ransac_thresh, cfg.ransac_min_inliers);
+  auto left_fit  = fit_parabola_ransac(tr.pts_left,  cfg.ransac_iters, cfg.ransac_thresh, cfg.ransac_min_inliers,
+                                         cfg.ransac_max_abs_a, cfg.ransac_refit,
+                                         (int)std::lround(cfg.ransac_linear_span * cfg.ipm.bev_h));
+  auto right_fit = fit_parabola_ransac(tr.pts_right, cfg.ransac_iters, cfg.ransac_thresh, cfg.ransac_min_inliers,
+                                         cfg.ransac_max_abs_a, cfg.ransac_refit,
+                                         (int)std::lround(cfg.ransac_linear_span * cfg.ipm.bev_h));
   rr.left = left_fit.poly;
   rr.right = right_fit.poly;
 
   rr.ok = rr.left.valid && rr.right.valid;
-  rr.status = rr.ok ? "ok" : "fit_failed";
+  if (rr.ok) rr.status = "ok";
+  else if (!cfg.require_both_peaks && (rr.left.valid || rr.right.valid)) rr.status = "partial";
+  else rr.status = "fit_failed";
 
   dbg.overlay = draw_polys(dbg.bev_bgr, rr.left, rr.right);
   return rr;

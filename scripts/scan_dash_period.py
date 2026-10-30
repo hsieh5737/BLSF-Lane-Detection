@@ -29,10 +29,13 @@ def main():
     ap.add_argument("--hood_row", type=int, required=True)
     ap.add_argument("--step", type=int, default=2)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--list", help="use this list (relative to root) instead of the non-evaluated test lists")
     a = ap.parse_args()
     root = pathlib.Path(a.root)
     keys = []
-    for lst in LISTS:
+    if a.list:
+        keys = [k.lstrip("/") for k in (root / a.list).read_text().split() if k.lstrip("/").startswith(a.driver)]
+    for lst in ([] if a.list else LISTS):
         keys += [k.lstrip("/") for k in (root / "list/test_split" / f"{lst}.txt").read_text().split()
                  if k.lstrip("/").startswith(a.driver)]
     keys = sorted(set(keys))[::a.step]

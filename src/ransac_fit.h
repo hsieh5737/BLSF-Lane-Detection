@@ -14,6 +14,10 @@ struct RansacResult {
 };
 
 double eval_poly_x(const Poly2& p, double y);
-RansacResult fit_parabola_ransac(const std::vector<cv::Point>& pts, int iters, double inlier_thresh, int min_inliers);
+// max_abs_a > 0 rejects models with |a| above it (curvature bound); refit adds a
+// least-squares fit on the inliers of the best model; with linear_span > 0 that
+// refit is a straight line (a = 0) when the inliers span fewer rows. Defaults reproduce v1.
+RansacResult fit_parabola_ransac(const std::vector<cv::Point>& pts, int iters, double inlier_thresh, int min_inliers,
+                                 double max_abs_a = 0.0, bool refit = false, int linear_span = 0);
 
 } // namespace blsf

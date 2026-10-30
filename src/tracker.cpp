@@ -18,7 +18,7 @@ TrackResult sliding_window_track(const cv::Mat& feat, const Peaks& peaks, int n_
   int W=feat.cols, H=feat.rows;
 
   int xL=peaks.x_left, xR=peaks.x_right;
-  if (xL<0 || xR<0) return tr;
+  if (xL<0 && xR<0) return tr;  // a missing side is skipped (callers decide whether one side suffices)
 
   int win_h = H / std::max(1, n_windows);
 
@@ -31,22 +31,26 @@ TrackResult sliding_window_track(const cv::Mat& feat, const Peaks& peaks, int n_
 
     std::vector<cv::Point> ptsW;
     ptsW.reserve(1024);
-    collect_points_in_window(feat, winL, ptsW);
-    if ((int)ptsW.size() >= minpix) {
-      int sumx=0;
-      for (auto& p: ptsW){ sumx+=p.x; tr.pts_left.push_back(p); }
-      xL = sumx/(int)ptsW.size();
+    if (xL>=0) {
+      collect_points_in_window(feat, winL, ptsW);
+      if ((int)ptsW.size() >= minpix) {
+        int sumx=0;
+        for (auto& p: ptsW){ sumx+=p.x; tr.pts_left.push_back(p); }
+        xL = sumx/(int)ptsW.size();
+      }
+      tr.windows_left.push_back(winL);
     }
-    tr.windows_left.push_back(winL);
 
-    ptsW.clear();
-    collect_points_in_window(feat, winR, ptsW);
-    if ((int)ptsW.size() >= minpix) {
-      int sumx=0;
-      for (auto& p: ptsW){ sumx+=p.x; tr.pts_right.push_back(p); }
-      xR = sumx/(int)ptsW.size();
+    if (xR>=0) {
+      ptsW.clear();
+      collect_points_in_window(feat, winR, ptsW);
+      if ((int)ptsW.size() >= minpix) {
+        int sumx=0;
+        for (auto& p: ptsW){ sumx+=p.x; tr.pts_right.push_back(p); }
+        xR = sumx/(int)ptsW.size();
+      }
+      tr.windows_right.push_back(winR);
     }
-    tr.windows_right.push_back(winR);
   }
 
   return tr;

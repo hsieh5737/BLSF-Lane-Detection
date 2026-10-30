@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include "lsd.h"
@@ -18,6 +19,7 @@ struct BLSFConfig {
   float max_abs_angle=35;  // must stay 35: fixed overall envelope
   float min_len=20;        // strict >; synchronized with LSD by pipeline
   int draw_thickness=2;
+  std::string decision="sum"; // "sum": Eq. (6) argmax B_k (v1); "density": argmax B_k / band width
 };
 
 struct VoteInfo {

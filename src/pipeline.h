@@ -18,10 +18,15 @@ struct Config {
   std::string feat_source="segments_mask";
   bool blsf_enabled=true;
   int peaks_smooth=9, peaks_min=50;
+  PeakOptions peak_opt;
+  bool require_both_peaks=true;  // v1: a frame without both initial peaks gives no output
   int n_windows=12, margin=60, minpix=40;
   int ransac_iters=200;
   double ransac_thresh=10.0;
   int ransac_min_inliers=80;
+  double ransac_max_abs_a=0.0;
+  bool ransac_refit=false;
+  double ransac_linear_span=0.0;  // fraction of BEV height; 0 = off
 };
 
 struct DebugPack {
