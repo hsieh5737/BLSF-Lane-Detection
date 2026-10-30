@@ -1,0 +1,48 @@
+{
+ "rule": "docs/EVAL_PROTOCOL_V2.md section 5 (as v1 section 8): per subset, with_blsf; frame whose mean IoU over true-positive sides is the (lower) median among frames with >=1 true positive; first frame in key order that is not fully correct (frame_ok = 0)",
+ "condition": "with_blsf",
+ "configuration": "configs/v2.yaml",
+ "commit": "9acbb78",
+ "selection": {
+  "dazzle": {
+   "median_iou_true_positive": {
+    "key": "driver_100_30frame/05251444_0422.MP4/03480.jpg",
+    "mean_tp_iou": 0.7645,
+    "tp_frames": 151
+   },
+   "first_failure": {
+    "key": "driver_100_30frame/05250538_0313.MP4/02940.jpg"
+   }
+  },
+  "night": {
+   "median_iou_true_positive": {
+    "key": "driver_100_30frame/05252322_0553.MP4/03930.jpg",
+    "mean_tp_iou": 0.7921,
+    "tp_frames": 3017
+   },
+   "first_failure": {
+    "key": "driver_100_30frame/05250325_0272.MP4/00330.jpg"
+   }
+  },
+  "curve": {
+   "median_iou_true_positive": {
+    "key": "driver_100_30frame/05250510_0307.MP4/01860.jpg",
+    "mean_tp_iou": 0.7707,
+    "tp_frames": 141
+   },
+   "first_failure": {
+    "key": "driver_100_30frame/05250437_0296.MP4/00060.jpg"
+   }
+  },
+  "normal": {
+   "median_iou_true_positive": {
+    "key": "driver_193_90frame/06061049_0850.MP4/02160.jpg",
+    "mean_tp_iou": 0.8034,
+    "tp_frames": 6746
+   },
+   "first_failure": {
+    "key": "driver_100_30frame/05250434_0295.MP4/00090.jpg"
+   }
+  }
+ }
+}
