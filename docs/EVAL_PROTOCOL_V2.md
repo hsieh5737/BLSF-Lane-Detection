@@ -151,4 +151,13 @@ CULane annotates; absolute values are far below those in the paper.
 
 ## Deviations
 
-None yet.
+1. Hash e-mail timing (recorded after the run, 2026-10-30): the co-author was
+   informed of the freeze online before the run; the e-mail with the commit
+   and archive hash was sent at 10:54 UTC, about 3 minutes after the runs
+   started (10:50:39 UTC) and before any scoring (11:42 UTC). Nothing in the
+   frozen archive changed.
+2. Scoring was run from the extracted `git archive` of the registered commit,
+   so `eval_manifest.json` records no commit id; the archive hash identifies
+   the code.
+
+Results: `results/culane_v2_20261030/`.

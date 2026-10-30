@@ -1,0 +1,125 @@
+{
+  "schema": "blsf-experiment-v1",
+  "spec": {
+    "_comment": "Template for docs/EVAL_PROTOCOL_V2.md. Copy to culane_v2.local.json and set root to your ASCII-only CULane path.",
+    "name": "culane_v2",
+    "dataset": "culane",
+    "root": "/home/claude/eval/data",
+    "subsets": {
+      "dazzle": "list/test_split/test2_hlight.txt",
+      "night": "list/test_split/test8_night.txt",
+      "curve": "list/test_split/test6_curve.txt",
+      "normal": "list/test_split/test0_normal.txt"
+    },
+    "exclude": [],
+    "homographies": {
+      "driver_37_30frame": "calibration/v2/culane_driver_37_30frame.yml",
+      "driver_100_30frame": "calibration/v2/culane_driver_100_30frame.yml",
+      "driver_193_90frame": "calibration/v2/culane_driver_193_90frame.yml"
+    },
+    "conditions": {
+      "with_blsf": "configs/v2.yaml",
+      "without_blsf": "configs/v2_ablation_no_blsf.yaml",
+      "with_blsf_eq6": "configs/v2_eq6.yaml"
+    },
+    "eval": {
+      "line_width_px": 10,
+      "iou_threshold": 0.5,
+      "min_gt_rows": 100,
+      "bootstrap": 2000,
+      "seed": 20261029
+    },
+    "secondary_image_metric": {
+      "img_w": 1640,
+      "img_h": 590,
+      "line_width_px": 30,
+      "iou_threshold": 0.5
+    },
+    "cluster_bootstrap": {
+      "unit": "clip",
+      "iters": 2000,
+      "seed": 20261029
+    }
+  },
+  "spec_sha256": "b37178aa9a0ed6131a161e1c296efecb1793b19880e2e40d518b547fe3dfb6ca",
+  "dry_run": false,
+  "limit": 0,
+  "repository": {
+    "commit": null,
+    "dirty": false
+  },
+  "started_utc": "2026-10-30T11:42:07.958115+00:00",
+  "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+  "python": "3.10.13 | packaged by conda-forge | (main, Oct 26 2023, 18:07:37) [GCC 12.3.0]",
+  "opencv_python": "4.6.0",
+  "binary_sha256": null,
+  "mode": "eval_only",
+  "configs": {
+    "with_blsf": {
+      "path": "/home/claude/v2eval/BLSF-Lane-Detection-9acbb78/configs/v2.yaml",
+      "sha256": "7c97696919d32c73b2d95cd152939ecbe1ceee6d73da13893cffd58baddc5c40"
+    },
+    "without_blsf": {
+      "path": "/home/claude/v2eval/BLSF-Lane-Detection-9acbb78/configs/v2_ablation_no_blsf.yaml",
+      "sha256": "94ae08f043172a949473700310ab05ac882b7f17c1e6fcbefba635ac8ebcb663"
+    },
+    "with_blsf_eq6": {
+      "path": "/home/claude/v2eval/BLSF-Lane-Detection-9acbb78/configs/v2_eq6.yaml",
+      "sha256": "f6a3317c9ece3539f65e3549672d6926aea5e13803c4e9f4e220e2454dbf7832"
+    }
+  },
+  "homographies": {
+    "driver_37_30frame": {
+      "path": "/home/claude/v2eval/BLSF-Lane-Detection-9acbb78/calibration/v2/culane_driver_37_30frame.yml",
+      "sha256": "2acde1bae6a9f656cc882fa05d7bdcbea1f4596c166e376db458b9b76964b1a2"
+    },
+    "driver_100_30frame": {
+      "path": "/home/claude/v2eval/BLSF-Lane-Detection-9acbb78/calibration/v2/culane_driver_100_30frame.yml",
+      "sha256": "9749f119ec3d1cb082bcafdd05181a2ec28eeba39810b273bdbe9171345abe0d"
+    },
+    "driver_193_90frame": {
+      "path": "/home/claude/v2eval/BLSF-Lane-Detection-9acbb78/calibration/v2/culane_driver_193_90frame.yml",
+      "sha256": "43ed95b64e50958a28cf9328cbb0a55a5cafb356295acc52397ec844e56f1daf"
+    }
+  },
+  "lists": {
+    "dazzle": {
+      "path": "/home/claude/eval/data/list/test_split/test2_hlight.txt",
+      "sha256": "8068fa4c598ae2fc20373c0d872dfa95191e3bea37d81dc7f1b3db0a925cc3d0",
+      "frames": 486
+    },
+    "night": {
+      "path": "/home/claude/eval/data/list/test_split/test8_night.txt",
+      "sha256": "dab0aec3c16ac6cf93ed1d51b39d3bb41137ab333251b89c75cf297b3035ed32",
+      "frames": 7029
+    },
+    "curve": {
+      "path": "/home/claude/eval/data/list/test_split/test6_curve.txt",
+      "sha256": "801b507e5201cb8c891cb150e902dbb046e496d84aa9bcc2a5aa5925d1e5843c",
+      "frames": 422
+    },
+    "normal": {
+      "path": "/home/claude/eval/data/list/test_split/test0_normal.txt",
+      "sha256": "e161e93ebc05a9fc3fb78e3f4eaf388d3ed6cc5fb9fb927ded853b659e09343c",
+      "frames": 9621
+    }
+  },
+  "eval_params": {
+    "line_width_px": 10,
+    "iou_threshold": 0.5,
+    "min_gt_rows": 100,
+    "bootstrap": 2000,
+    "seed": 20261029
+  },
+  "bev": [
+    225,
+    300
+  ],
+  "max_frames_per_run": 0,
+  "ended_utc": "2026-10-30T11:46:51.682939+00:00",
+  "result_files": {
+    "per_frame.csv": "3bff1312bb32752269affbba02b2ed5527788ff4068ddf2ff0a9854f40dfda3c",
+    "summary.json": "a72c33e39c731c3a795d240198442a372828479a264c03d3dc430eec8f7b654c",
+    "summary.md": "8a9565518c063cb25e09888aaf4c5eafb336b3222a8c9a42ad6d05451f88d182"
+  }
+}
