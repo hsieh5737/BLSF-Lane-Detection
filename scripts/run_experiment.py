@@ -69,6 +69,8 @@ def main():
     ap.add_argument("--resume", action="store_true", help="reuse completed runs in work_dir")
     ap.add_argument("--limit", type=int, default=0, help="DRY RUN: first N frames per subset")
     ap.add_argument("--runs_only", action="store_true", help="stage and run, then stop (score elsewhere)")
+    ap.add_argument("--max_frames_per_run", type=int, default=0,
+                    help="split a calibration group into runs of at most N frames (same results)")
     ap.add_argument("--eval_only", action="store_true",
                     help="score the runs already in work_dir (mapping.csv, runs/); no staging or runs")
     a = ap.parse_args()
@@ -120,6 +122,17 @@ def main():
             raise SystemExit(f"subset {name}: {len(missing)} images missing, e.g. {missing[:5]}")
         subsets[name] = items
 
+    def batches_of(items):
+        """Map key -> run batch: the calibration group, split into chunks if requested."""
+        out = {}
+        for g in sorted({i.group for i in items}):
+            keys = sorted(i.key for i in items if i.group == g)
+            n = a.max_frames_per_run
+            for j, k in enumerate(keys):
+                out[k] = g if not n or len(keys) <= n else f"{g}__part{j // n}"
+        return out
+    batch = {name: batches_of(items) for name, items in subsets.items()}
+
     manifest = {"schema": "blsf-experiment-v1", "spec": spec, "spec_sha256": sha(spec_path),
                 "dry_run": bool(a.limit), "limit": a.limit, "repository": git_revision(),
                 "started_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -129,7 +142,8 @@ def main():
                 "homographies": {g: {"path": str(p), "sha256": sha(p)} for g, p in homs.items()},
                 "lists": {n: {"path": str(resolve(l, root)), "sha256": sha(resolve(l, root)),
                               "frames": len(subsets[n])} for n, l in spec["subsets"].items()},
-                "eval_params": ev.params_dict(params), "bev": [bev_w, bev_h]}
+                "eval_params": ev.params_dict(params), "bev": [bev_w, bev_h],
+                "max_frames_per_run": a.max_frames_per_run}
     if manifest["repository"]["dirty"]:
         print("WARNING: repository has uncommitted changes; record them before reporting", file=sys.stderr)
 
@@ -138,6 +152,7 @@ def main():
         with open(work / "mapping.csv", newline="") as fh:
             for row in csv.DictReader(fh):
                 mapping[(row["subset"], row["staged_name"])] = row["key"]
+                batch.setdefault(row["subset"], {})[row["key"]] = row.get("batch") or row["group"]
         listed = {(n, it.key) for n, items in subsets.items() for it in items}
         if {(s_, k) for (s_, _), k in mapping.items()} != listed:
             raise SystemExit("mapping.csv does not match the spec's frame lists")
@@ -145,21 +160,21 @@ def main():
     stage = work / "stage"
     with (open(os.devnull, "w") if a.eval_only else open(work / "mapping.csv", "w", newline="")) as fh:
         w = csv.writer(fh)
-        w.writerow(["subset", "group", "key", "staged_name"])
+        w.writerow(["subset", "group", "key", "staged_name", "batch"])
         for name, items in ({} if a.eval_only else subsets).items():
             for it in items:
-                d = stage / name / it.group
+                d = stage / name / batch[name][it.key]
                 d.mkdir(parents=True, exist_ok=True)
                 dst = d / (safe_name(it.key) + it.image.suffix.lower())
                 if not dst.exists():
                     link_or_copy(it.image, dst)
                 mapping[(name, dst.name)] = it.key
-                w.writerow([name, it.group, it.key, dst.name])
+                w.writerow([name, it.group, it.key, dst.name, batch[name][it.key]])
 
     # 2) run each condition per subset/group
     for cond, cpath in ({} if a.eval_only else cfg).items():
         for name, items in subsets.items():
-            for g in sorted({i.group for i in items}):
+            for g in sorted(set(batch[name].values())):
                 out = work / "runs" / cond / name / g
                 done = out / "manifest.json"
                 if a.resume and done.exists() and json.loads(done.read_text()).get("exit_code") == 0:
@@ -167,7 +182,7 @@ def main():
                 if out.exists():
                     shutil.rmtree(out)
                 cmd = [sys.executable, str(HERE / "run_audit.py"), "--binary", a.binary, "--config", str(cpath),
-                       "--input_dir", str(stage / name / g), "--homography", str(homs[g]),
+                       "--input_dir", str(stage / name / g), "--homography", str(homs[g.split("__part")[0]]),
                        "--output_dir", str(out), "--no_debug"]
                 print("RUN", cond, name, g, flush=True)
                 r = subprocess.run(cmd)
@@ -188,7 +203,7 @@ def main():
         gts = {it.key: ev.gt_ego_lanes(it.lanes, Hs[it.group], bev_w, bev_h, params) for it in items}
         for cond in cfg:
             preds = {}
-            for g in sorted({i.group for i in items}):
+            for g in sorted(set(batch[name].values())):
                 for row in ev.read_predictions(work / "runs" / cond / name / g / "predictions.csv"):
                     staged = re.split(r"[\\/]", row["image"])[-1]
                     preds[mapping[(name, staged)]] = row
