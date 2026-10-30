@@ -122,6 +122,8 @@ def read_predictions(path):
 def write_per_frame(path, rows):
     keys = ["condition", "subset", "group", "key", "status", "gt_left", "gt_right", "pred_left",
             "pred_right", "iou_left", "iou_right", "tp", "fp", "fn", "frame_ok"]
+    if rows and "img_tp" in rows[0]:  # secondary image-space metric, when evaluated
+        keys += ["img_iou_left", "img_iou_right", "img_tp", "img_fp", "img_fn", "img_frame_ok"]
     with open(path, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=keys)
         w.writeheader()

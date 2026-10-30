@@ -1,0 +1,28 @@
+%YAML:1.0
+---
+bev_w: 225
+bev_h: 300
+H: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 1.4587521630276249e-04, 6.6078160953251825e-04,
+       -3.6244114498484159e-01, 4.3941427652216011e-19,
+       2.4449877750611238e-03, -1., 1.4647142550738670e-21,
+       5.8736143069557183e-06, -2.2428958151692307e-03 ]
+calibration_image: "/sessions/rcw-018hkubmbmhrwfokfqyhw2of/mnt/BLSF/CULane_dev/driver_161_90frame/06030819_0755.MP4/00450.jpg"
+image_points_tl_tr_br_bl: !!opencv-matrix
+   rows: 4
+   cols: 2
+   dt: d
+   data: [ 7.1388000000000000e+02, 409., 7.9584000000000003e+02, 409.,
+       9.0158000000000004e+02, 4.7902999999999997e+02,
+       6.0813999999999999e+02, 4.7902999999999997e+02 ]
+rect_w_m: 3.7500000000000000e+00
+rect_l_m: 15.
+roi_w_m: 1.1250000000000000e+01
+roi_l_m: 15.
+roi_near_m: 0.
+lateral_offset_m: 0.
+sx_px_per_m: 20.
+sy_px_per_m: 20.

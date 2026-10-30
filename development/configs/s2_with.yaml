@@ -1,0 +1,74 @@
+%YAML:1.0
+---
+# Paper nominal configuration (Sm=9, Tg=15, T1=17, BEV 225x300) on a 3:4 ground
+# ROI, so BEV pixels are isotropic and pixel angles equal physical headings.
+# Parameters not given in the paper are proportional conversions of the 640x480
+# values: kx = 225/640 (lateral), ky = 300/480 (forward). Rules in README.
+# The homography must map a 3:4 ground rectangle to 225x300.
+ipm:
+  bev_width: 225
+  bev_height: 300
+  roi_w_over_l: 0.75   # ground ROI 3:4 (width:length); sx/sy = 1 (isotropic)
+
+gray:
+  w_r: 0.5
+  w_g: 0.4
+  w_b: 0.1
+
+mlt:
+  median_ksize: 9          # paper Sm
+  offset_t: 15             # paper Tg
+
+lsd:
+  min_len: 17.0            # paper T1
+  min_abs_angle: 0.0
+  max_abs_angle: 35.0
+
+blsf:
+  enabled: 1
+  a0_lo: -35.0
+  a0_hi: 0.0
+  a1_lo: -5.0
+  a1_hi: 5.0
+  a2_lo: 0.0
+  a2_hi: 35.0
+  delta_theta: 0.0
+  min_total_vote: 187.5    # 300 x ky (0.625)
+  draw_thickness: 1        # 2 x kx (0.35) -> 1
+  decision: "density"
+  strips: 2
+features:
+  source: "segments_mask"
+
+peaks:
+  smooth_ksize: 3          # 9 x kx -> 3 (odd)
+  min_peak_value: 12
+  rows_fraction: 1.0
+  select: "max"
+  expected_offset: 0
+  max_offset: 75
+  min_width: 0
+  max_width: 0
+  min_offset: 18
+tracker:
+  n_windows: 12            # count, unscaled
+  margin: 12
+  minpix: 13               # 40 x (t'/t) x ky = 40 x 0.3125
+  require_both_peaks: 0
+ransac:
+  iters: 200
+  inlier_thresh: 3.5       # 10 x kx
+  min_inliers: 25          # 80 x (t'/t) x ky
+  refit: 1
+  max_abs_a: 0.0003
+  linear_span: 0.5
+
+pair:
+  mode: "none"
+  min_width: 50
+  max_width: 100
+  max_width_change: 20
+
+accept:
+  min_inlier_frac: 0.5
+  min_inlier_frac_single: 0.7

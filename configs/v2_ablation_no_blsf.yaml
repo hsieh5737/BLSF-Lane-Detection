@@ -1,0 +1,69 @@
+%YAML:1.0
+---
+# Corrected method v2 (docs/EVAL_PROTOCOL_V2.md), WITHOUT BLSF (paired ablation:
+# only blsf.enabled differs from configs/v2.yaml).
+# Paper values unchanged: Sm=9, Tg=15, T1=17, BEV 225x300, bands
+# A0=[-35,0], A1=[-5,5], A2=[0,35], +/-35 deg envelope, confidence gate.
+# Changes against configs/paper_nominal.yaml are marked [v2]; every [v2]
+# setting was chosen on CULane train/val frames only (docs/DEV_LOG_V2.md).
+# The homography must map an 11.25 m x 15 m (3:4) ground rectangle to 225x300.
+ipm:
+  bev_width: 225
+  bev_height: 300
+  roi_w_over_l: 0.75       # isotropic: pixel angles equal physical headings
+
+gray:
+  w_r: 0.5
+  w_g: 0.4
+  w_b: 0.1
+
+mlt:
+  median_ksize: 9          # paper Sm
+  offset_t: 15             # paper Tg
+
+lsd:
+  min_len: 17.0            # paper T1
+  min_abs_angle: 0.0
+  max_abs_angle: 35.0
+
+blsf:
+  enabled: 0
+  a0_lo: -35.0
+  a0_hi: 0.0
+  a1_lo: -5.0
+  a1_hi: 5.0
+  a2_lo: 0.0
+  a2_hi: 35.0
+  delta_theta: 0.0
+  min_total_vote: 187.5    # 300 x ky (0.625)
+  draw_thickness: 1        # 2 x kx (0.35) -> 1
+  decision: "density"      # [v2] winning band by votes per degree (B_k / band width), not raw B_k
+
+features:
+  source: "segments_mask"
+
+peaks:
+  smooth_ksize: 3          # 9 x kx -> 3 (odd)
+  min_peak_value: 12       # as registered in v1 (synthetic-data rationale)
+  rows_fraction: 1.0       # [v2] histogram over the whole BEV (v1: lower half)
+  select: "max"
+  max_offset: 75           # [v2] peaks within 3.75 m of the BEV centre
+  min_offset: 18           # [v2] no initial peak within 0.9 m of the BEV centre
+
+tracker:
+  n_windows: 12            # count, unscaled
+  margin: 12               # [v2] (v1: 21 = 60 x kx)
+  minpix: 13               # 40 x (t'/t) x ky = 40 x 0.3125
+  require_both_peaks: 0    # [v2] each side is tracked on its own (status "partial")
+
+ransac:
+  iters: 200
+  inlier_thresh: 3.5       # 10 x kx
+  min_inliers: 25          # 80 x (t'/t) x ky
+  refit: 1                 # [v2] least-squares refit on the inliers
+  max_abs_a: 0.0003        # [v2] curvature bound, radius >= ~83 m at 20 px/m
+  linear_span: 0.5         # [v2] straight-line refit when inliers span < 50% of the BEV height
+
+accept:
+  min_inlier_frac: 0.5         # [v2] output a side only if inliers / tracked points >= 0.5
+  min_inlier_frac_single: 0.7  # [v2] ... >= 0.7 when the other side has no output

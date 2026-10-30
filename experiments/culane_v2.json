@@ -1,0 +1,25 @@
+{
+  "_comment": "Template for docs/EVAL_PROTOCOL_V2.md. Copy to culane_v2.local.json and set root to your ASCII-only CULane path.",
+  "name": "culane_v2",
+  "dataset": "culane",
+  "root": "D:/datasets/CULane",
+  "subsets": {
+    "dazzle": "list/test_split/test2_hlight.txt",
+    "night": "list/test_split/test8_night.txt",
+    "curve": "list/test_split/test6_curve.txt",
+    "normal": "list/test_split/test0_normal.txt"
+  },
+  "exclude": [],
+  "homographies": {
+    "driver_37_30frame": "calibration/v2/culane_driver_37_30frame.yml",
+    "driver_100_30frame": "calibration/v2/culane_driver_100_30frame.yml",
+    "driver_193_90frame": "calibration/v2/culane_driver_193_90frame.yml"
+  },
+  "conditions": {
+    "with_blsf": "configs/v2.yaml",
+    "without_blsf": "configs/v2_ablation_no_blsf.yaml",
+    "with_blsf_eq6": "configs/v2_eq6.yaml"
+  },
+  "eval": {"line_width_px": 10, "iou_threshold": 0.5, "min_gt_rows": 100, "bootstrap": 2000, "seed": 20261029},
+  "secondary_image_metric": {"img_w": 1640, "img_h": 590, "line_width_px": 30, "iou_threshold": 0.5}
+}

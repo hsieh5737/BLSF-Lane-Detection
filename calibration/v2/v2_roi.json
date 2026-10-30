@@ -1,0 +1,17 @@
+{
+ "driver_37_30frame": {
+  "hood_row": 395,
+  "y_hood_m": -1.962,
+  "roi_near_m": -1.462
+ },
+ "driver_100_30frame": {
+  "hood_row": 440,
+  "y_hood_m": -4.262,
+  "roi_near_m": -3.762
+ },
+ "driver_193_90frame": {
+  "hood_row": 400,
+  "y_hood_m": -0.637,
+  "roi_near_m": -0.137
+ }
+}

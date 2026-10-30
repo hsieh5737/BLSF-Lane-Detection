@@ -14,7 +14,7 @@ REPO = HERE.parent
 sys.path.insert(0, str(HERE))
 import cv2  # noqa: E402
 import numpy as np  # noqa: E402
-from blsf_eval import datasets, evaluate as ev, geometry as geo  # noqa: E402
+from blsf_eval import datasets, evaluate as ev, evaluate_image as ei, geometry as geo  # noqa: E402
 
 
 def sha(p):
@@ -55,10 +55,14 @@ def safe_name(key):
 
 
 def link_or_copy(src, dst):
+    """Hard link, else symbolic link (e.g. data on another file system), else copy."""
     try:
         os.link(src, dst)
     except OSError:
-        shutil.copy2(src, dst)
+        try:
+            os.symlink(os.path.abspath(src), dst)
+        except OSError:
+            shutil.copy2(src, dst)
 
 
 def main():
@@ -93,8 +97,9 @@ def main():
     root = Path(spec["root"])
     params = ev.EvalParams(**spec.get("eval", {}))
     conds = spec["conditions"]
-    if set(conds) != {"with_blsf", "without_blsf"}:
-        raise SystemExit("conditions must be exactly with_blsf and without_blsf")
+    if not {"with_blsf", "without_blsf"} <= set(conds):
+        raise SystemExit("conditions must include with_blsf and without_blsf (further conditions are compared with with_blsf)")
+    extra = [c for c in conds if c not in ("with_blsf", "without_blsf")]
     cfg = {k: resolve(v, REPO) for k, v in conds.items()}
     sizes = {k: config_bev(v) for k, v in cfg.items()}
     if len(set(sizes.values())) != 1:
@@ -199,6 +204,9 @@ def main():
     res = work / "results"
     res.mkdir(exist_ok=True)
     per_frame, by = [], {}
+    sec = spec.get("secondary_image_metric")  # dict of ImageEvalParams fields, or absent
+    ip = ei.ImageEvalParams(**sec) if sec is not None else None
+    rois = {g: ei.roi_mask(ei.bev_to_image(H, bev_w, bev_h), bev_w, bev_h, ip) for g, H in Hs.items()} if ip else {}
     for name, items in subsets.items():
         gts = {it.key: ev.gt_ego_lanes(it.lanes, Hs[it.group], bev_w, bev_h, params) for it in items}
         for cond in cfg:
@@ -214,6 +222,10 @@ def main():
                     raise SystemExit(f"no prediction row for {it.key} ({cond})")
                 f = ev.score_frame(row, gts[it.key], bev_w, bev_h, params)
                 f.update(condition=cond, subset=name, group=it.group, key=it.key, status=row["status"])
+                if ip:
+                    fi = ei.score_frame_image(row, it.lanes, Hs[it.group], bev_w, bev_h, params, ip, rois[it.group])
+                    f.update(img_tp=fi["tp"], img_fp=fi["fp"], img_fn=fi["fn"], img_frame_ok=fi["frame_ok"],
+                             img_iou_left=fi["img_iou_left"], img_iou_right=fi["img_iou_right"])
                 frames.append(f)
             by[(cond, name)] = frames
             per_frame += frames
@@ -226,6 +238,21 @@ def main():
         wb, wo = get("with_blsf"), get("without_blsf")
         summary["subsets"][name] = {"with_blsf": ev.summarize(wb, params, paired=wo),
                                     "without_blsf": ev.summarize(wo, params)}
+        for xc in extra:
+            xs = ev.summarize(get(xc), params)
+            vs = ev.summarize(wb, params, paired=get(xc))
+            xs["with_blsf_minus_this"] = {"delta_f1_ci": vs["delta_f1_ci"], "mcnemar": vs["mcnemar"]}
+            summary["subsets"][name][xc] = xs
+        if ip:
+            img = lambda fr: [dict(tp=f["img_tp"], fp=f["img_fp"], fn=f["img_fn"], frame_ok=f["img_frame_ok"],
+                                   status=f["status"]) for f in fr]
+            summary.setdefault("secondary_image_metric", {"params": sec, "subsets": {}})["subsets"][name] = {
+                "with_blsf": ev.summarize(img(wb), params, paired=img(wo)), "without_blsf": ev.summarize(img(wo), params)}
+            for xc in extra:
+                xs = ev.summarize(img(get(xc)), params)
+                vs = ev.summarize(img(wb), params, paired=img(get(xc)))
+                xs["with_blsf_minus_this"] = {"delta_f1_ci": vs["delta_f1_ci"], "mcnemar": vs["mcnemar"]}
+                summary["secondary_image_metric"]["subsets"][name][xc] = xs
     ev.dump_json(res / "summary.json", summary)
 
     lines = ["| Subset | Condition | Frames | P | R | F1 [95% CI] | Low-conf. |", "|---|---|---|---|---|---|---|"]
@@ -237,6 +264,29 @@ def main():
         s = d["with_blsf"]
         lines.append(f"| {name} | delta F1 (with - without) | | | | [{s['delta_f1_ci'][0]:+.3f}, "
                      f"{s['delta_f1_ci'][1]:+.3f}] | McNemar p={s['mcnemar']['p_exact']:.3g} |")
+        for xc in extra:
+            s = d[xc]
+            lines.append(f"| {name} | {xc} | {s['frames']} | {s['precision']:.3f} | {s['recall']:.3f} | "
+                         f"{s['f1']:.3f} [{s['f1_ci'][0]:.3f}, {s['f1_ci'][1]:.3f}] | {s['low_confidence_rate']:.3f} |")
+            v = s["with_blsf_minus_this"]
+            lines.append(f"| {name} | delta F1 (with - {xc}) | | | | [{v['delta_f1_ci'][0]:+.3f}, "
+                         f"{v['delta_f1_ci'][1]:+.3f}] | McNemar p={v['mcnemar']['p_exact']:.3g} |")
+    if ip:
+        lines += ["", "Secondary metric (image space, CULane-style 30 px, ego lanes, BEV ROI region):", "",
+                  "| Subset | Condition | P | R | F1 [95% CI] |", "|---|---|---|---|---|"]
+        for name, d in summary["secondary_image_metric"]["subsets"].items():
+            for cond in ("with_blsf", "without_blsf"):
+                t = d[cond]
+                lines.append(f"| {name} | {cond} | {t['precision']:.3f} | {t['recall']:.3f} | "
+                             f"{t['f1']:.3f} [{t['f1_ci'][0]:.3f}, {t['f1_ci'][1]:.3f}] |")
+            t = d["with_blsf"]
+            lines.append(f"| {name} | delta F1 (with - without) | | | [{t['delta_f1_ci'][0]:+.3f}, {t['delta_f1_ci'][1]:+.3f}] |")
+            for xc in extra:
+                t = d[xc]
+                lines.append(f"| {name} | {xc} | {t['precision']:.3f} | {t['recall']:.3f} | "
+                             f"{t['f1']:.3f} [{t['f1_ci'][0]:.3f}, {t['f1_ci'][1]:.3f}] |")
+                v = t["with_blsf_minus_this"]
+                lines.append(f"| {name} | delta F1 (with - {xc}) | | | [{v['delta_f1_ci'][0]:+.3f}, {v['delta_f1_ci'][1]:+.3f}] |")
     if a.limit:
         lines.insert(0, "**DRY RUN on a truncated list - not a result.**\n")
     (res / "summary.md").write_text("\n".join(lines) + "\n")
